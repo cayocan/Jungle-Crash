@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  # Development override for games service (hot-reload)
+  games:
+    image: oven/bun:1-alpine
+    container_name: junglecrash-games-dev
+    working_dir: /app
+    env_file:
+      - ./services/games/.env
+    volumes:
+      - ./services/games:/app:cached
+    ports:
+      - "4001:4001"
+    command: sh -lc "bun install --no-save || true && bun run dev"
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  # Development override for wallets service (hot-reload)
+  wallets:
+    image: oven/bun:1-alpine
+    container_name: junglecrash-wallets-dev
+    working_dir: /app
+    env_file:
+      - ./services/wallets/.env
+    volumes:
+      - ./services/wallets:/app:cached
+    ports:
+      - "4002:4002"
+    command: sh -lc "bun install --no-save || true && bun run dev"
+    depends_on:
+      - postgres
+      - rabbitmq
