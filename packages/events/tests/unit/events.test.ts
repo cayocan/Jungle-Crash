@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+/// <reference types="bun-types" />
 
 describe('Event schemas runtime checks', () => {
     it('envelope serialization preserves string cents and timestamp', () => {
