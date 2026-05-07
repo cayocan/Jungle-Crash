@@ -17,6 +17,13 @@
   },
   "devDependencies": {
     "bun-types": "latest",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "prisma": "4.15.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "optionalDependencies": {
+    "@prisma/client": "4.15.0"
   }
 }
