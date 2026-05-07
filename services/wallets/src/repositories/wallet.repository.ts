@@ -1,7 +1,9 @@
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { Wallet } from '../domain/wallet';
 
-export class WalletRepository {
+@Injectable()
+export class WalletRepository implements OnModuleDestroy {
     private prisma: PrismaClient;
 
     constructor(prisma?: PrismaClient) {
@@ -47,5 +49,13 @@ export class WalletRepository {
 
     async addOutboxEvent(event: { aggregateId?: string; eventType: string; payload: any }) {
         return this.prisma.outboxEvent.create({ data: { aggregateId: event.aggregateId, eventType: event.eventType, payload: event.payload } });
+    }
+
+    async onModuleDestroy() {
+        try {
+            await this.prisma.$disconnect();
+        } catch {
+            // ignore
+        }
     }
 }
