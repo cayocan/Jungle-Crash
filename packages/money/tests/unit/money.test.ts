@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'bun:test';
+/// <reference types="bun-types" />
+
 import { toCents, fromCents, multiplyCents, addCents, formatCurrency } from '../../src/index';
 
 describe('MoneyUtils', () => {
