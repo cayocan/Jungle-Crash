@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "types": ["bun-types"],
+    "module": "ESNext",
+    "target": "ES2021",
+    "skipLibCheck": true
+  },
+  "include": ["tests/**/*", "src/**/*"]
+}
