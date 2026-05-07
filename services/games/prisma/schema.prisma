@@ -1,0 +1,70 @@
+// Prisma schema for the `games` service.
+// Models: Round (game round), Bet (player bet), ProcessedRequest (idempotency), OutboxEvent (outbox pattern).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoundStatus {
+  PENDING
+  OPEN
+  CLOSED
+  SETTLED
+  CANCELLED
+}
+
+model Round {
+  id             String      @id @default(uuid())
+  status         RoundStatus @default(PENDING)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  serverSeed     String?
+  serverSeedHash String?
+  provablyFair   Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  bets           Bet[]
+}
+
+model Bet {
+  id                   String   @id @default(uuid())
+  roundId              String
+  round                Round    @relation(fields: [roundId], references: [id])
+  userId               String
+  amountCents          BigInt
+  cashoutCents         BigInt?
+  multiplierAtCashout  String?
+  placedAt             DateTime @default(now())
+  cashedOutAt          DateTime?
+  settledAt            DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([roundId])
+  @@index([userId])
+}
+
+model ProcessedRequest {
+  id          String   @id @default(uuid())
+  requestId   String   @unique
+  requestType String
+  processedAt DateTime @default(now())
+  meta        Json?
+}
+
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  aggregateId String?
+  eventType   String
+  payload     Json
+  published   Boolean  @default(false)
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+}
