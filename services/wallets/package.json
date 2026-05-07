@@ -6,7 +6,12 @@
     "dev": "bun run --watch src/main.ts",
     "start": "bun run src/main.ts",
     "test": "bun test tests/unit",
-    "test:e2e": "bun test tests/e2e"
+    "test:e2e": "bun test tests/e2e",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev --name init",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
@@ -17,6 +22,13 @@
   },
   "devDependencies": {
     "bun-types": "latest",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+      "prisma": "4.15.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "optionalDependencies": {
+      "@prisma/client": "4.15.0"
   }
 }
