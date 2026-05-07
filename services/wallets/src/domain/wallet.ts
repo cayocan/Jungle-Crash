@@ -34,6 +34,14 @@ export class Wallet {
         return this.props.currency!;
     }
 
+    get createdAt() {
+        return this.props.createdAt;
+    }
+
+    get updatedAt() {
+        return this.props.updatedAt;
+    }
+
     credit(amount: bigint) {
         if (amount <= 0n) throw new Error('amount must be positive');
         this.props.balance = this.props.balance + amount;
