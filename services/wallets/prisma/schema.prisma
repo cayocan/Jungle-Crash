@@ -1,0 +1,40 @@
+// Prisma schema for the `wallets` service.
+// Uses `DATABASE_URL` from the service .env to connect to Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   BigInt   @default(0)
+  currency  String   @default("BRL")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProcessedRequest {
+  id          String   @id @default(uuid())
+  requestId   String   @unique
+  requestType String
+  processedAt DateTime @default(now())
+  meta        Json?
+}
+
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  aggregateId String?
+  eventType   String
+  payload     Json
+  published   Boolean  @default(false)
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+}
