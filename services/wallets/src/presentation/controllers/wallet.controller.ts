@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, NotFoundException, Param, Post } from '@nestjs/common';
 import { WalletRepository } from '../../repositories/wallet.repository';
 import { CreateWalletDto } from '../dtos/create-wallet.dto';
 import { AmountDto } from '../dtos/amount.dto';
@@ -30,15 +30,23 @@ export class WalletController {
   }
 
   @Post(':userId/credit')
-  async credit(@Param('userId') userId: string, @Body() dto: AmountDto) {
+  async credit(@Param('userId') userId: string, @Body() dto: AmountDto, @Headers('x-request-id') requestId?: string) {
     const amount = BigInt(dto.amountCents);
+    if (requestId) {
+      const res = await this.repo.creditWithProcessedRequest(requestId, userId, amount);
+      return { id: res.wallet?.id, userId: res.wallet?.userId, balanceCents: res.wallet?.balance.toString(), alreadyProcessed: res.alreadyProcessed };
+    }
     const updated = await this.repo.credit(userId, amount);
     return { id: updated.id, userId: updated.userId, balanceCents: updated.balance.toString() };
   }
 
   @Post(':userId/debit')
-  async debit(@Param('userId') userId: string, @Body() dto: AmountDto) {
+  async debit(@Param('userId') userId: string, @Body() dto: AmountDto, @Headers('x-request-id') requestId?: string) {
     const amount = BigInt(dto.amountCents);
+    if (requestId) {
+      const res = await this.repo.debitWithProcessedRequest(requestId, userId, amount);
+      return { id: res.wallet?.id, userId: res.wallet?.userId, balanceCents: res.wallet?.balance.toString(), alreadyProcessed: res.alreadyProcessed };
+    }
     const updated = await this.repo.debit(userId, amount);
     return { id: updated.id, userId: updated.userId, balanceCents: updated.balance.toString() };
   }
