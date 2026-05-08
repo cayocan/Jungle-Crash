@@ -5,11 +5,13 @@ import { RabbitService } from './rabbit.service';
 @Injectable()
 export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxPublisher.name);
-  private readonly prisma = new PrismaClient();
+  private readonly prisma: PrismaClient;
   private running = false;
   private intervalHandle?: NodeJS.Timeout;
 
-  constructor(private readonly rabbit: RabbitService) {}
+  constructor(private readonly rabbit: RabbitService, prisma?: PrismaClient) {
+    this.prisma = prisma ?? new PrismaClient();
+  }
 
   async onModuleInit() {
     await this.rabbit.connect();
@@ -19,7 +21,7 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
     this.logger.log('OutboxPublisher started');
   }
 
-  private async processBatch() {
+  async processBatch() {
     if (!this.running) return;
     const batch = await this.prisma.outboxEvent.findMany({
       where: { published: false, attempts: { lt: 5 } },
