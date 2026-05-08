@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RabbitService } from './rabbit.service';
 
@@ -9,7 +9,7 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
   private running = false;
   private intervalHandle?: NodeJS.Timeout;
 
-  constructor(private readonly rabbit: RabbitService, prisma?: PrismaClient) {
+  constructor(private readonly rabbit: RabbitService, @Optional() prisma?: PrismaClient) {
     this.prisma = prisma ?? new PrismaClient();
   }
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Optional } from '@nestjs/common';
 import { WalletRepository } from '../repositories/wallet.repository';
 
 const defaultAmqp = require('amqplib');
@@ -10,7 +10,7 @@ export class WalletConsumer implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WalletConsumer.name);
   private amqpClient: any;
 
-  constructor(private readonly repo: WalletRepository, amqpClient?: any) {
+  constructor(private readonly repo: WalletRepository, @Optional() amqpClient?: any) {
     this.amqpClient = amqpClient ?? defaultAmqp;
   }
 
