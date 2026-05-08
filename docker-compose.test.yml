@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Test runner that builds from the wallets service Dockerfile and mounts the tests
+  test-runner:
+    build:
+      context: ./services/wallets
+      dockerfile: Dockerfile
+    # Mount tests from the repo so we don't need to change .dockerignore
+    volumes:
+      - ./services/wallets/tests:/app/tests:ro
+    env_file:
+      - ./services/wallets/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      wallets:
+        condition: service_healthy
+    command: ["bun", "test", "./tests/e2e/wallets.integration.test.ts"]

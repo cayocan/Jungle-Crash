@@ -15,7 +15,9 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      # pg_isready without -d attempts to connect to a database named after the user
+      # the DB we create is `postgres`, so explicitly check that DB to avoid "database \"admin\" does not exist" log spam
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
