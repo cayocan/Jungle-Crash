@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { Wallet } from '../domain/wallet';
 
@@ -6,7 +6,7 @@ import { Wallet } from '../domain/wallet';
 export class WalletRepository implements OnModuleDestroy {
     private prisma: PrismaClient;
 
-    constructor(prisma?: PrismaClient) {
+    constructor(@Optional() prisma?: PrismaClient) {
         this.prisma = prisma ?? new PrismaClient();
     }
 
