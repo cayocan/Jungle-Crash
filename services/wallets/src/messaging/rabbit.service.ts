@@ -13,6 +13,7 @@ export class RabbitService implements OnModuleDestroy {
     // use a confirm channel for publish confirmations
     this.channel = await this.conn.createConfirmChannel();
     await this.channel.assertExchange('domain.events', 'topic', { durable: true });
+    await this.channel.assertExchange('domain.events.dlq', 'fanout', { durable: true });
     this.logger.log(`Connected to RabbitMQ ${amqpUrl}`);
   }
 
