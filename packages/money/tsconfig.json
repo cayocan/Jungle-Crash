@@ -1,9 +1,8 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["bun-types"],
     "module": "ESNext",
-    "target": "ES2021",
-    "skipLibCheck": true
+    "types": ["bun-types"]
   },
   "include": ["tests/**/*", "src/**/*"]
 }
