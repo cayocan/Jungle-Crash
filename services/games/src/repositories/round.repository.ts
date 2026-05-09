@@ -86,6 +86,7 @@ export class RoundRepository implements OnModuleDestroy {
                     ? (typeof b.cashoutCents === 'bigint' ? b.cashoutCents : BigInt(b.cashoutCents))
                     : undefined,
                 multiplierAtCashout: b.multiplierAtCashout ?? undefined,
+                autoCashoutAt: b.autoCashoutAt ?? undefined,
                 placedAt: b.placedAt ?? undefined,
                 cashedOutAt: b.cashedOutAt ?? undefined,
                 settledAt: b.settledAt ?? undefined,
@@ -98,7 +99,7 @@ export class RoundRepository implements OnModuleDestroy {
    * and records the request ID for idempotency — all within a single transaction.
    *
    * @throws {Error} On duplicate request, non-open round, or existing bet for the user.
-   */    async placeBet(roundId: string, userId: string, amountCents: bigint, requestId: string): Promise<BetProps> {
+   */    async placeBet(roundId: string, userId: string, amountCents: bigint, requestId: string, autoCashoutAt?: number): Promise<BetProps> {
         return this.prisma.$transaction(async (tx) => {
             const existing = await tx.processedRequest.findUnique({ where: { requestId } });
             if (existing) throw new Error('duplicate request');
@@ -110,7 +111,7 @@ export class RoundRepository implements OnModuleDestroy {
             if (existingBet) throw new Error('already bet in this round');
 
             const bet = await tx.bet.create({
-                data: { roundId, userId, amountCents, placedAt: new Date() },
+                data: { roundId, userId, amountCents, placedAt: new Date(), autoCashoutAt: autoCashoutAt ?? null },
             });
 
             // Publish WalletDebitRequested via outbox
@@ -131,6 +132,7 @@ export class RoundRepository implements OnModuleDestroy {
                 roundId: bet.roundId,
                 userId: bet.userId,
                 amountCents: typeof bet.amountCents === 'bigint' ? bet.amountCents : BigInt(bet.amountCents),
+                autoCashoutAt: bet.autoCashoutAt ?? undefined,
             };
         });
     }

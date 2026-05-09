@@ -40,6 +40,7 @@ model Bet {
   amountCents          BigInt
   cashoutCents         BigInt?
   multiplierAtCashout  String?
+  autoCashoutAt        Float?
   placedAt             DateTime @default(now())
   cashedOutAt          DateTime?
   settledAt            DateTime?

@@ -52,16 +52,17 @@ export class GameService implements OnModuleInit {
      *
      * @throws {Error} If there is no round in the betting phase.
      */
-    async placeBet(userId: string, amountCents: bigint, requestId: string): Promise<BetProps> {
+    async placeBet(userId: string, amountCents: bigint, requestId: string, autoCashoutAt?: number): Promise<BetProps> {
         if (!this.currentRound || this.currentRound.status !== 'OPEN') {
             throw new Error('round not in betting phase');
         }
-        const bet = await this.roundRepo.placeBet(this.currentRound.id!, userId, amountCents, requestId);
+        const bet = await this.roundRepo.placeBet(this.currentRound.id!, userId, amountCents, requestId, autoCashoutAt);
         this.gateway?.broadcast('bet_placed', {
             betId: bet.id,
             roundId: bet.roundId,
             userId: bet.userId,
             amountCents: bet.amountCents.toString(),
+            autoCashoutAt: bet.autoCashoutAt,
         });
         return bet;
     }
@@ -155,6 +156,32 @@ export class GameService implements OnModuleInit {
             });
 
             if (this.currentMultiplier >= crashPoint) break;
+
+            // Auto cashout — check all active bets with a target <= current multiplier
+            const liveRound = this.currentRound;
+            if (liveRound) {
+                const pending = liveRound.bets.filter(
+                    (b) => !b.cashedOutAt && b.autoCashoutAt != null && this.currentMultiplier >= b.autoCashoutAt!
+                );
+                for (const bet of pending) {
+                    try {
+                        const { randomUUID } = await import('crypto');
+                        const reqId = randomUUID();
+                        const cashed = await this.roundRepo.cashout(bet.id!, this.currentMultiplier, reqId);
+                        // Mark locally so we don't retry the same bet next tick
+                        bet.cashedOutAt = new Date();
+                        this.gateway?.broadcast('cashout', {
+                            betId: cashed.id,
+                            roundId: cashed.roundId,
+                            userId: cashed.userId,
+                            cashoutCents: cashed.cashoutCents?.toString(),
+                            multiplierAtCashout: cashed.multiplierAtCashout,
+                            auto: true,
+                        });
+                    } catch { /* bet may already be cashed out or round settling — ignore */ }
+                }
+            }
+
             await sleep(TICK_MS);
         }
 

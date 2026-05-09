@@ -40,7 +40,7 @@ export class BetController {
         }
 
         const reqId = requestId ?? randomUUID();
-        const bet = await this.gameService.placeBet(userId, amountCents, reqId);
+        const bet = await this.gameService.placeBet(userId, amountCents, reqId, dto.autoCashoutAt);
         return {
             betId: bet.id,
             roundId: bet.roundId,

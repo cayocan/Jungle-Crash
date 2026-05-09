@@ -9,6 +9,7 @@ export type BetProps = {
     amountCents: bigint;
     cashoutCents?: bigint;
     multiplierAtCashout?: string;
+    autoCashoutAt?: number;
     placedAt?: Date;
     cashedOutAt?: Date;
     settledAt?: Date;
@@ -134,6 +135,7 @@ export class Round {
                     ? (typeof b.cashoutCents === 'bigint' ? b.cashoutCents : BigInt(b.cashoutCents))
                     : undefined,
                 multiplierAtCashout: b.multiplierAtCashout ?? undefined,
+                autoCashoutAt: b.autoCashoutAt ?? undefined,
                 placedAt: b.placedAt ?? undefined,
                 cashedOutAt: b.cashedOutAt ?? undefined,
                 settledAt: b.settledAt ?? undefined,

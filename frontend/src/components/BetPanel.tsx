@@ -3,7 +3,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useGameStore } from "../store/gameStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Timer, TrendingUp, DollarSign } from "lucide-react";
+import { Timer, TrendingUp, DollarSign, Zap } from "lucide-react";
 
 const API = "/games";
 
@@ -18,6 +18,7 @@ export default function BetPanel({ userId }: Props) {
   const queryClient = useQueryClient();
 
   const [amountInput, setAmountInput] = useState("1000");
+  const [autoCashoutInput, setAutoCashoutInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
@@ -54,7 +55,10 @@ export default function BetPanel({ userId }: Props) {
           Authorization: `Bearer ${getToken()}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ amountCents }),
+        body: JSON.stringify({
+          amountCents,
+          ...(autoCashoutInput ? { autoCashoutAt: parseFloat(autoCashoutInput) } : {}),
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as Record<string, unknown>;
@@ -180,6 +184,49 @@ export default function BetPanel({ userId }: Props) {
           <p className="text-xs mt-1" style={{ color: "#ff3b3b" }}>
             Aposta máxima: R$ 1.000,00
           </p>
+        )}
+      </div>
+
+      {/* Auto cashout input */}
+      <div>
+        <label className="block text-xs mb-1.5" style={{ color: "#4a5568" }}>
+          <span className="flex items-center gap-1">
+            <Zap size={11} />
+            Auto cashout em (multiplicador)
+          </span>
+        </label>
+        <div
+          className="flex items-center"
+          style={{
+            border: `1px solid ${autoCashoutInput ? "#ffd70066" : "#1e2d3d"}`,
+            borderRadius: "0.5rem",
+            background: "#080c18",
+          }}
+        >
+          <span style={{ color: "#4a5568", marginLeft: "0.75rem", fontSize: 13, flexShrink: 0 }}>×</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="Ex: 2.00 (opcional)"
+            value={autoCashoutInput}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              const val = e.target.value.replace(",", ".");
+              if (/^\d*\.?\d{0,2}$/.test(val) || val === "") setAutoCashoutInput(val);
+            }}
+            disabled={hasBet || loading}
+            className="flex-1 bg-transparent text-sm px-2 py-2.5 outline-none"
+            style={{ color: hasBet || loading ? "#4a5568" : autoCashoutInput ? "#ffd700" : "#f0f0f0" }}
+          />
+          {autoCashoutInput && (
+            <button
+              onClick={() => setAutoCashoutInput("")}
+              className="mr-2 text-xs"
+              style={{ color: "#4a5568" }}
+            >✕</button>
+          )}
+        </div>
+        {autoCashoutInput && parseFloat(autoCashoutInput) < 1.01 && (
+          <p className="text-xs mt-1" style={{ color: "#ff3b3b" }}>Mínimo: ×1.01</p>
         )}
       </div>
 
