@@ -2,7 +2,6 @@ import { LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
-import { useGameStore } from '../store/gameStore';
 import CrashGraph from '../components/CrashGraph';
 import BetPanel from '../components/BetPanel';
 import BetHistory from '../components/BetHistory';
@@ -11,12 +10,11 @@ import RoundHistory from '../components/RoundHistory';
 export default function GamePage() {
   const { user, logout } = useAuth();
   const { wallet, isCreating } = useWallet();
-  const { balance } = useGameStore();
   const userId = user?.profile?.sub;
 
   useGameSocket(userId);
 
-  const displayBalance = balance ?? (wallet ? Number(wallet.balanceCents) : null);
+  const displayBalance = wallet ? Number(wallet.balanceCents) : null;
   const username = user?.profile?.preferred_username as string | undefined;
 
   return (
