@@ -2,5 +2,28 @@
   "name": "@crash/frontend",
   "version": "0.0.1",
   "private": true,
-  "main": "src/index.tsx"
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --project tsconfig.app.json --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.11"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.9",
+    "oidc-client-ts": "^3.5.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.0",
+    "socket.io-client": "^4.8.3",
+    "zustand": "^5.0.13"
+  }
 }
