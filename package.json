@@ -9,7 +9,8 @@
   "scripts": {
     "docker:up": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/docker-up.ps1",
     "docker:down": "docker compose down",
-    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f"
+    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f",
+    "seed:e2e": "cd services/games && bun scripts/seed-e2e.ts"
   },
   "devDependencies": {
     "bun-types": "latest"

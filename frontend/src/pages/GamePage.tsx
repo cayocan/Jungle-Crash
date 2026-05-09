@@ -5,6 +5,7 @@ import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
 import CrashGraph from '../components/CrashGraph';
 import BetPanel from '../components/BetPanel';
+import AutoBet from '../components/AutoBet';
 import BetHistory from '../components/BetHistory';
 import RoundHistory from '../components/RoundHistory';
 import ProvablyFairModal from '../components/ProvablyFairModal';
@@ -15,6 +16,7 @@ export default function GamePage() {
   const { wallet, isLoading: walletLoading, isCreating } = useWallet();
   const userId = user?.profile?.sub;
   const [showFair, setShowFair] = useState(false);
+  const [betTab, setBetTab] = useState<'manual' | 'auto'>('manual');
 
   useGameSocket(userId);
 
@@ -80,8 +82,26 @@ export default function GamePage() {
 
         {/* Bet controls + Round history */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="md:col-span-3">
-            <BetPanel userId={userId} />
+          <div className="md:col-span-3 space-y-2">
+            {/* Manual / Auto tabs */}
+            <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #1e2d3d', background: '#0d1421' }}>
+              {(['manual', 'auto'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setBetTab(tab)}
+                  className="flex-1 text-xs py-2 font-semibold transition-colors"
+                  style={{
+                    background: betTab === tab ? '#1e2d3d' : 'transparent',
+                    color: betTab === tab ? '#f0f0f0' : '#4a5568',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {tab === 'manual' ? '🎲 Manual' : '🤖 Auto'}
+                </button>
+              ))}
+            </div>
+            {betTab === 'manual' ? <BetPanel userId={userId} /> : <AutoBet />}
           </div>
           <div className="md:col-span-2">
             <RoundHistory onVerify={() => setShowFair(true)} />

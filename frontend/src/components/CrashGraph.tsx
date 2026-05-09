@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 const W = 800;
@@ -98,6 +98,22 @@ export default function CrashGraph() {
     statusColor = '#ff3b3b';
   }
 
+  // Formula tooltip state
+  const [showFormula, setShowFormula] = useState(false);
+  const formulaRef = useRef<HTMLDivElement>(null);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    if (!showFormula) return;
+    const handler = (e: MouseEvent) => {
+      if (formulaRef.current && !formulaRef.current.contains(e.target as Node)) {
+        setShowFormula(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFormula]);
+
   return (
     <div className="relative rounded-2xl overflow-hidden" style={{ background: '#0a1020', border: '1px solid #1e2d3d' }}>
       {/* Red crash flash overlay */}
@@ -136,6 +152,63 @@ export default function CrashGraph() {
             style={{ color: statusColor }}
           >
             {statusText}
+          </div>
+        )}
+      </div>
+
+      {/* Formula button + tooltip */}
+      <div ref={formulaRef} className="absolute bottom-2 right-3 z-20">
+        <button
+          onClick={() => setShowFormula((v) => !v)}
+          className="text-[11px] px-2 py-0.5 rounded font-mono transition-colors"
+          style={{
+            background: showFormula ? '#1e3a2a' : '#0d1421aa',
+            color: showFormula ? '#00ff88' : '#374151',
+            border: `1px solid ${showFormula ? '#00ff8844' : '#1e2d3d'}`,
+          }}
+          title="Ver fórmula da curva"
+        >
+          ƒ(t)
+        </button>
+        {showFormula && (
+          <div
+            className="absolute bottom-8 right-0 p-3 rounded-xl text-xs font-mono space-y-1.5"
+            style={{
+              background: '#0d1421',
+              border: '1px solid #1e2d3d',
+              width: 260,
+              boxShadow: '0 8px 32px #00000088',
+            }}
+          >
+            <p style={{ color: '#00ff88', fontWeight: 700 }}>Curva do multiplicador</p>
+            <p style={{ color: '#9ca3af' }}>
+              m(t) = max(1.0,&nbsp;e<sup>0.00006 · t</sup>)
+            </p>
+            <p style={{ color: '#4a5568', fontSize: 10 }}>
+              t = tempo em ms desde o início da rodada
+            </p>
+            <hr style={{ borderColor: '#1e2d3d' }} />
+            <p style={{ color: '#9ca3af' }}>Exemplos:</p>
+            <table style={{ width: '100%', color: '#6b7280', fontSize: 10, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', paddingBottom: 2 }}>t</th>
+                  <th style={{ textAlign: 'right', paddingBottom: 2 }}>m(t)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[[0,'1.00x'],[5000,'1.35x'],[10000,'1.82x'],[20000,'3.32x'],[30000,'6.05x'],[60000,'36.6x']].map(([t, v]) => (
+                  <tr key={t}>
+                    <td>{typeof t === 'number' ? `${t/1000}s` : t}</td>
+                    <td style={{ textAlign: 'right', color: '#00ff8888' }}>{v}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <hr style={{ borderColor: '#1e2d3d' }} />
+            <p style={{ color: '#4a5568', fontSize: 10 }}>
+              Dobra a cada ≈ 11,5s · Crash = Provably Fair HMAC-SHA256
+            </p>
           </div>
         )}
       </div>
