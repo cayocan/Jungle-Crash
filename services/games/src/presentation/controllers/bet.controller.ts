@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Headers, BadRequestException, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { GameService } from '../../application/game.service';
 import { RoundRepository } from '../../repositories/round.repository';
 import { PlaceBetDto } from '../dtos/place-bet.dto';
@@ -6,6 +7,8 @@ import { JwtAuthGuard } from '../../infrastructure/jwt-auth.guard';
 import { CurrentUser } from '../../infrastructure/current-user.decorator';
 import { randomUUID } from 'crypto';
 
+@ApiTags('Bets')
+@ApiBearerAuth()
 @Controller()
 export class BetController {
     constructor(
@@ -17,6 +20,7 @@ export class BetController {
      * Places a bet on the currently open round.
      * Requires a valid Bearer JWT; optionally accepts `x-request-id` for idempotency.
      */
+    @ApiOperation({ summary: 'Place a bet on the current round' })
     @UseGuards(JwtAuthGuard)
     @Post('bet')
     async placeBet(
@@ -45,6 +49,7 @@ export class BetController {
     }
 
     /** Cashes out the calling user's active bet at the current multiplier. */
+    @ApiOperation({ summary: 'Cash out at the current multiplier' })
     @UseGuards(JwtAuthGuard)
     @Post('bet/cashout')
     async cashout(
@@ -62,6 +67,9 @@ export class BetController {
     }
 
     /** Returns a paginated history of bets placed by the calling user. */
+    @ApiOperation({ summary: 'Paginated bet history for the authenticated user' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
     @UseGuards(JwtAuthGuard)
     @Get('bets/me')
     async myBets(

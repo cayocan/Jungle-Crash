@@ -1,3 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
+
 export class PlaceBetDto {
-  amountCents!: string; // stringified bigint, ex: "1000"
+  @ApiProperty({ description: 'Bet amount in cents (integer as string)', example: '1000' })
+  amountCents!: string;
 }

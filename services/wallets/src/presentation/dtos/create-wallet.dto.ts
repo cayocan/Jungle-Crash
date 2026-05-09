@@ -1,5 +1,9 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
 export class CreateWalletDto {
-  userId!: string;
-  initialBalanceCents?: string; // stringified integer cents, e.g. "1000"
+  @ApiPropertyOptional({ description: 'Initial balance in cents (integer as string)', example: '10000' })
+  initialBalanceCents?: string;
+
+  @ApiPropertyOptional({ description: 'Currency code', example: 'BRL' })
   currency?: string;
 }

@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { RoundRepository } from '../../repositories/round.repository';
 import { GameService } from '../../application/game.service';
 import { Round } from '../../domain/round';
@@ -24,6 +25,7 @@ function serializeRound(round: Round, includeServerSeed = false) {
     };
 }
 
+@ApiTags('Rounds')
 @Controller('rounds')
 export class RoundsController {
     constructor(
@@ -31,7 +33,7 @@ export class RoundsController {
         private readonly gameService: GameService,
     ) { }
 
-    /** Returns the current round state including the live multiplier, or `{ status: 'idle' }`. */
+    @ApiOperation({ summary: 'Get current round state and live multiplier' })
     @Get('current')
     async getCurrent() {
         const round = this.gameService.getCurrentRound();
@@ -42,7 +44,9 @@ export class RoundsController {
         };
     }
 
-    /** Returns a paginated list of all settled rounds with their provably fair data revealed. */
+    @ApiOperation({ summary: 'Paginated history of settled rounds' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
     @Get('history')
     async getHistory(@Query('page') page = '1', @Query('limit') limit = '20') {
         const { rounds, total } = await this.roundRepo.findHistory(Number(page), Number(limit));
@@ -54,7 +58,7 @@ export class RoundsController {
         };
     }
 
-    /** Returns the server seed and crash point for a settled round so clients can verify fairness. */
+    @ApiOperation({ summary: 'Verify provably fair seed and crash point for a settled round' })
     @Get(':roundId/verify')
     async verify(@Param('roundId') roundId: string) {
         const round = await this.roundRepo.findById(roundId);
