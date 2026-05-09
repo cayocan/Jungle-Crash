@@ -26,6 +26,7 @@ export class WalletEventConsumer implements OnModuleInit {
 
     /** Subscribes to wallet saga reply events from RabbitMQ. */
     async onModuleInit() {
+        await this.rabbit.waitForConnection();
         await this.rabbit.consume(
             'games.wallet-events',
             ['WalletDebited', 'WalletCredited', 'WalletDebitFailed'],

@@ -1,12 +1,29 @@
-import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
 const amqp: any = require('amqplib');
 
 @Injectable()
-export class RabbitService implements OnModuleDestroy {
+export class RabbitService implements OnModuleInit, OnModuleDestroy {
     private conn?: any;
     private channel?: any;
     private readonly logger = new Logger(RabbitService.name);
+    private connectionReady!: Promise<void>;
+    private resolveConnection!: () => void;
+
+    constructor() {
+        this.connectionReady = new Promise<void>((resolve) => {
+            this.resolveConnection = resolve;
+        });
+    }
+
+    async onModuleInit(): Promise<void> {
+        await this.connect();
+    }
+
+    /** Returns a promise that resolves once the RabbitMQ channel is ready. */
+    waitForConnection(): Promise<void> {
+        return this.connectionReady;
+    }
 
     /**
      * Opens a connection and a confirm channel to the RabbitMQ broker,
@@ -18,6 +35,7 @@ export class RabbitService implements OnModuleDestroy {
         this.channel = await this.conn.createConfirmChannel();
         await this.channel.assertExchange('domain.events', 'topic', { durable: true });
         this.logger.log(`Connected to RabbitMQ ${amqpUrl}`);
+        this.resolveConnection();
     }
 
     /**
