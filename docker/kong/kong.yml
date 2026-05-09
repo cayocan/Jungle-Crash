@@ -17,15 +17,11 @@ services:
         paths:
           - /games
         strip_path: true
-      - name: games-bet-route
-        paths:
-          - /games/bet
-        strip_path: true
         plugins:
-          # Stricter limit on bet endpoint: 20 bets/minute per IP
+          # Stricter limit on games service: 30 req/min per IP
           - name: rate-limiting
             config:
-              minute: 20
+              minute: 30
               policy: local
               limit_by: ip
               hide_client_headers: false
