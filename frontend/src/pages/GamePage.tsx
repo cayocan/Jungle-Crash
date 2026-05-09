@@ -1,4 +1,4 @@
-import { LogOut, Wallet } from 'lucide-react';
+import { LogOut, Wallet, PlusCircle } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -10,13 +10,13 @@ import RoundHistory from '../components/RoundHistory';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
-  const { wallet } = useWallet();
+  const { wallet, createWallet } = useWallet();
   const { balance } = useGameStore();
   const userId = user?.profile?.sub;
 
   useGameSocket(userId);
 
-  const displayBalance = balance ?? wallet?.balanceCents;
+  const displayBalance = balance ?? (wallet ? Number(wallet.balanceCents) : null);
   const username = user?.profile?.preferred_username as string | undefined;
 
   return (
@@ -37,11 +37,23 @@ export default function GamePage() {
           {/* Balance */}
           <div className="flex items-center gap-2">
             <Wallet size={14} style={{ color: '#4a5568' }} />
-            <span className="text-sm font-bold" style={{ color: '#00ff88' }}>
-              {displayBalance != null
-                ? `R$ ${(displayBalance / 100).toFixed(2)}`
-                : <span style={{ color: '#374151' }}>—</span>}
-            </span>
+            {wallet === null ? (
+              <button
+                onClick={() => createWallet.mutate()}
+                disabled={createWallet.isPending}
+                className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                style={{ color: '#ffd700', border: '1px solid #3a3010', background: 'transparent', cursor: 'pointer' }}
+              >
+                <PlusCircle size={12} />
+                {createWallet.isPending ? 'Criando…' : 'Criar carteira (R$1.000)'}
+              </button>
+            ) : (
+              <span className="text-sm font-bold" style={{ color: '#00ff88' }}>
+                {displayBalance != null
+                  ? `R$ ${(displayBalance / 100).toFixed(2)}`
+                  : <span style={{ color: '#374151' }}>—</span>}
+              </span>
+            )}
           </div>
 
           {/* Username */}

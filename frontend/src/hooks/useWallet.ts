@@ -3,8 +3,15 @@ import { useAuth } from '../auth/AuthProvider';
 
 const API = '/wallets';
 
+export interface WalletDto {
+  id: string;
+  balanceCents: number;
+  currency: string;
+}
+
 export function useWallet() {
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: wallet, refetch } = useQuery({
     queryKey: ['wallet'],
@@ -14,19 +21,18 @@ export function useWallet() {
       });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error('Failed to fetch wallet');
-      return res.json() as Promise<{ balanceCents: number; currency: string }>;
+      return res.json() as Promise<WalletDto>;
     },
     retry: false,
+    refetchInterval: 15_000,
   });
-
-  const queryClient = useQueryClient();
 
   const createWallet = useMutation({
     mutationFn: async () => {
       const res = await fetch(`${API}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initialBalanceCents: 100000 }),
+        body: JSON.stringify({ initialBalanceCents: '100000', currency: 'BRL' }),
       });
       if (!res.ok) throw new Error('Failed to create wallet');
       return res.json();

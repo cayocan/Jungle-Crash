@@ -26,12 +26,12 @@ export default function RoundHistory() {
       if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch('/games/rounds/history?limit=20', { headers });
       if (!res.ok) throw new Error('Failed');
-      return res.json() as Promise<{ rounds: Round[] }>;
+      return res.json() as Promise<{ data: Round[]; total: number }>;
     },
     refetchInterval: 8000,
   });
 
-  const rounds = data?.rounds ?? [];
+  const rounds = data?.data ?? [];
 
   return (
     <div
