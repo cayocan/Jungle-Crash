@@ -1,5 +1,7 @@
 param()
 
+Set-StrictMode -Off
+
 function Get-BunExe {
   $bunCmd = Get-Command bun -ErrorAction SilentlyContinue
   if ($bunCmd) { return $bunCmd.Source }
@@ -32,66 +34,89 @@ function Wait-For-Postgres {
   return $false
 }
 
-Write-Host "Starting Docker Compose (build + detach)..."
+# ─── Step 1: Auto-create .env files from .env.example (fresh clone support) ───
+Write-Host ""
+Write-Host "=== [1/4] Checking environment files... ==="
+$envPairs = @(
+  @{ src = "services/games/.env.example";   dst = "services/games/.env" },
+  @{ src = "services/wallets/.env.example"; dst = "services/wallets/.env" },
+  @{ src = "frontend/.env.example";         dst = "frontend/.env" }
+)
+foreach ($pair in $envPairs) {
+  if (-not (Test-Path $pair.dst)) {
+    Write-Host "  Creating $($pair.dst) from $($pair.src)..."
+    Copy-Item $pair.src $pair.dst
+  } else {
+    Write-Host "  $($pair.dst) already exists — skipping."
+  }
+}
+
+# ─── Step 2: Build and start all containers ─────────────────────────────────
+Write-Host ""
+Write-Host "=== [2/4] Starting Docker Compose (build + detach)... ==="
 docker compose up --build -d
 if ($LASTEXITCODE -ne 0) {
   Write-Error "docker compose up failed"
-  exit $LASTEXITCODE
+  exit 1
 }
 
+# ─── Step 3: Wait for Postgres, then run migrations from host ────────────────
+Write-Host ""
+Write-Host "=== [3/4] Waiting for PostgreSQL... ==="
 if (-not (Wait-For-Postgres -Retries 90 -DelaySeconds 2)) {
-  Write-Error "Postgres readiness timeout. Aborting migrations."
+  Write-Error "Postgres readiness timeout. Aborting."
   exit 1
 }
 
+# Migrations also run inside each Docker CMD (bunx prisma migrate deploy).
+# Running them from the host as well is safe (idempotent) and ensures the
+# migration files on disk stay in sync even when volumes are fresh.
 $bunExe = Get-BunExe
-if (-not $bunExe) {
-  Write-Error "bun not found in PATH and not present at $env:USERPROFILE\.bun\bin\bun.exe. Please install Bun and restart your shell." 
-  exit 1
-}
+if ($bunExe) {
+  Write-Host "bun found at: $bunExe"
+  $services = Get-ChildItem -Directory -Path "services"
+  foreach ($svc in $services) {
+    $schema = Join-Path $svc.FullName "prisma\schema.prisma"
+    if (-not (Test-Path $schema)) { continue }
 
-# Find services that have a prisma schema and run migrations from host (so migration files persist)
-$services = Get-ChildItem -Directory -Path "services" | ForEach-Object { $_ }
-foreach ($svc in $services) {
-  $schema = Join-Path $svc.FullName "prisma\schema.prisma"
-  if (Test-Path $schema) {
-    Write-Host "Preparing migrations for service: $($svc.Name)"
-
+    Write-Host "  Running migrations for $($svc.Name)..."
     Push-Location $svc.FullName
     try {
-      Write-Host "Running 'bun install' in $($svc.FullName)"
-      & $bunExe install
-      if ($LASTEXITCODE -ne 0) {
-        Write-Error "bun install failed in $($svc.FullName)"
-        Pop-Location
-        exit $LASTEXITCODE
-      }
+      # Install deps in case this is a fresh clone with no node_modules
+      & $bunExe install 2>&1 | Out-Null
 
-      # Use localhost to reach the Postgres instance from host
       $origDb = $env:DATABASE_URL
       $env:DATABASE_URL = "postgresql://admin:admin@127.0.0.1:5432/$($svc.Name)"
 
       $migrationsDir = Join-Path $svc.FullName "prisma\migrations"
       if (Test-Path $migrationsDir) {
-        Write-Host "Applying existing migrations for $($svc.Name)..."
         & $bunExe x prisma migrate deploy --schema prisma/schema.prisma
       } else {
-        Write-Host "Creating initial migration for $($svc.Name) and applying it (prisma migrate dev)..."
         & $bunExe x prisma migrate dev --name init --schema prisma/schema.prisma
       }
 
       if ($LASTEXITCODE -ne 0) {
-        Write-Error "Prisma migrations failed for $($svc.Name)"
-        Pop-Location
-        exit $LASTEXITCODE
+        Write-Warning "Prisma migrations returned non-zero for $($svc.Name) — service will retry on startup."
       }
-
     } finally {
-      if ($origDb -ne $null) { $env:DATABASE_URL = $origDb } else { Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue }
+      if ($null -ne $origDb) { $env:DATABASE_URL = $origDb }
+      else { Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue }
       Pop-Location
     }
   }
+} else {
+  Write-Warning "bun not found on host — skipping host-side migrations (services handle them at startup via CMD)."
 }
 
-Write-Host "Migrations complete. Attaching to docker compose logs (press Ctrl+C to stop)"
-docker compose up
+# ─── Step 4: Tail logs ──────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "=== [4/4] All services started. Tailing logs (Ctrl+C to stop) ==="
+Write-Host ""
+Write-Host "  Frontend  → http://localhost:3000"
+Write-Host "  Games API → http://localhost:4001/docs"
+Write-Host "  Wallets   → http://localhost:4002/docs"
+Write-Host "  Keycloak  → http://localhost:8080  (admin/admin)"
+Write-Host "  RabbitMQ  → http://localhost:15672  (admin/admin)"
+Write-Host "  Kong GW   → http://localhost:8000"
+Write-Host ""
+docker compose logs --follow --tail=50

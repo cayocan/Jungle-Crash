@@ -456,8 +456,8 @@ export default function ProvablyFairModal({ onClose }: Props) {
                         >
                           <th className="text-left py-2 pr-3">Rodada</th>
                           <th className="text-left py-2 pr-3">Crash</th>
-                          <th className="text-left py-2 pr-3">Hash (prévia)</th>
-                          <th className="text-left py-2">Encerrada em</th>
+                          <th className="hidden sm:table-cell text-left py-2 pr-3">Hash (prévia)</th>
+                          <th className="hidden sm:table-cell text-left py-2">Encerrada em</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -493,12 +493,12 @@ export default function ProvablyFairModal({ onClose }: Props) {
                                   : "—"}
                               </td>
                               <td
-                                className="py-2 pr-3 font-mono"
+                                className="hidden sm:table-cell py-2 pr-3 font-mono"
                                 style={{ color: "#4a5568" }}
                               >
                                 {truncate(r.serverSeedHash, 20)}
                               </td>
-                              <td className="py-2" style={{ color: "#4a5568" }}>
+                              <td className="hidden sm:table-cell py-2" style={{ color: "#4a5568" }}>
                                 {r.endsAt
                                   ? new Date(r.endsAt).toLocaleTimeString(
                                       "pt-BR",

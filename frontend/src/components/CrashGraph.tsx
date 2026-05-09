@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 const W = 800;
@@ -19,11 +20,33 @@ function xScale(i: number, total: number): number {
 const Y_TICKS = [1, 1.5, 2, 3, 5, 10];
 
 export default function CrashGraph() {
-  const { multiplierHistory, status, crashPoint, multiplier, serverSeedHash } = useGameStore();
+  const { multiplierHistory, status, crashPoint, multiplier, serverSeedHash, bettingEndsAt } = useGameStore();
 
   const crashed = status === 'crashed';
   const running = status === 'running';
   const betting = status === 'betting';
+
+  // Countdown timer during betting phase
+  const [countdown, setCountdown] = useState<number | null>(null);
+  useEffect(() => {
+    if (!betting || !bettingEndsAt) { setCountdown(null); return; }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((bettingEndsAt - Date.now()) / 1000));
+      setCountdown(remaining);
+    };
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [betting, bettingEndsAt]);
+
+  // Crash flash: show for ~600ms after crash
+  const [showCrashFlash, setShowCrashFlash] = useState(false);
+  useEffect(() => {
+    if (!crashed) return;
+    setShowCrashFlash(true);
+    const id = setTimeout(() => setShowCrashFlash(false), 600);
+    return () => clearTimeout(id);
+  }, [crashed]);
 
   const lastMult = multiplierHistory[multiplierHistory.length - 1] ?? multiplier;
   const maxY = Math.max(2.0, lastMult * 1.15);
@@ -64,11 +87,26 @@ export default function CrashGraph() {
 
   // Status text
   let statusText = '';
-  if (betting) statusText = '🎲 FASE DE APOSTAS';
-  else if (crashed) statusText = '💥 CRASHED';
+  let statusColor = '#ffd700';
+  if (betting) {
+    statusText = countdown !== null && countdown > 0
+      ? `Apostas fecham em ${countdown}s`
+      : '🚀 Lançando…';
+    statusColor = '#ffd700';
+  } else if (crashed) {
+    statusText = '💥 CRASHED';
+    statusColor = '#ff3b3b';
+  }
 
   return (
     <div className="relative rounded-2xl overflow-hidden" style={{ background: '#0a1020', border: '1px solid #1e2d3d' }}>
+      {/* Red crash flash overlay */}
+      {showCrashFlash && (
+        <div
+          className="absolute inset-0 pointer-events-none z-10"
+          style={{ background: 'rgba(255,59,59,0.18)', animation: 'fade-in 0.05s ease' }}
+        />
+      )}
       {/* Seed hash badge */}
       {serverSeedHash && (
         <div
@@ -95,7 +133,7 @@ export default function CrashGraph() {
         {statusText && (
           <div
             className="mt-2 text-xs font-bold tracking-widest uppercase"
-            style={{ color: crashed ? '#ff3b3b' : '#ffd700' }}
+            style={{ color: statusColor }}
           >
             {statusText}
           </div>

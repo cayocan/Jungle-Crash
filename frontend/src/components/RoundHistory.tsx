@@ -23,7 +23,7 @@ function crashColor(cp: number): { bg: string; text: string; glow: string } {
 export default function RoundHistory({ onVerify }: Props) {
   const { getToken } = useAuth();
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['round-history'],
     queryFn: async () => {
       const token = getToken();
@@ -61,10 +61,16 @@ export default function RoundHistory({ onVerify }: Props) {
         )}
       </div>
 
-      {rounds.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-wrap gap-1.5 justify-start">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span key={i} className="anim-skeleton inline-block h-6 rounded-lg" style={{ width: i % 3 === 0 ? 52 : 44 }} />
+          ))}
+        </div>
+      ) : rounds.length === 0 ? (
         <div className="flex flex-wrap gap-1.5 justify-start">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-6 w-14 rounded" style={{ background: '#1e2d3d', animation: 'pulse 2s ease infinite' }} />
+            <span key={i} className="anim-skeleton inline-block h-6 rounded-lg" style={{ width: 44 }} />
           ))}
         </div>
       ) : (

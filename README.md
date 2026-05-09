@@ -111,20 +111,111 @@ bun test --cwd services/wallets tests/e2e
 
 ### Padrões implementados
 
-- **DDD**: entidades de domínio (`Round`, `Bet`) sem dependências de infraestrutura
-- **Outbox Pattern**: eventos publicados em transação com a operação de domínio; worker publica no broker de forma assíncrona
-- **Idempotência**: tabela `ProcessedRequest` garante que cada requisição seja processada exatamente uma vez
-- **Saga (Choreography)**: `games` publica `WalletDebitRequested` → `wallets` processa e publica `WalletDebited` ou `WalletDebitFailed` → `games` confirma ou cancela a aposta
-- **Provably Fair**: cada rodada tem `serverSeed` aleatório cujo hash é publicado antes do crash; após a rodada o seed é revelado para verificação
+| Padrão | Onde | Benefício |
+|---|---|---|
+| **DDD** | `services/games/src/domain/` | `Round` e `Bet` encapsulam invariantes sem dependências de infra; fácil de unit-testar |
+| **Outbox Pattern** | `OutboxWorker` em games e wallets | Eventos são escritos na mesma transação do banco; worker publica no broker de forma assíncrona, eliminando dual-write |
+| **Idempotência** | Tabela `ProcessedRequest` | Cada `requestId` é processado exatamente uma vez; permite retry seguro do lado do cliente |
+| **Saga (Coreografia)** | `games` ↔ `wallets` via RabbitMQ | Sem orquestrador central; cada serviço reage a eventos e publica o próximo passo |
+| **CQRS light** | `RoundRepository` | Writes via entidade de domínio; reads com queries SQL diretas sem passar pela entidade |
+| **Provably Fair** | `Round.computeCrashPoint()` | Crash determinístico verificável pelo jogador após a rodada |
 
-### Decisões de trade-off
+---
+
+### Decisões de arquitetura e trade-offs
+
+#### 1. Por que dois microserviços em vez de um monólito?
+
+A separação `games` / `wallets` reflete fronteiras de domínio reais: o serviço de jogos é **stateful** (mantém o estado de rodada em memória + WebSocket) enquanto o serviço de carteiras é **stateless** (CRUD financeiro com consistência forte). Colocá-los no mesmo processo causaria contenção de recursos entre o loop de multiplicador (CPU/timer) e as transações de saldo (I/O de banco).
+
+**Trade-off:** Aumenta a complexidade operacional (dois bancos, mensageria assíncrona). Para um MVP, um monólito seria suficiente — a separação foi escolhida para demonstrar o padrão Saga corretamente.
+
+---
+
+#### 2. Saga de Coreografia (fluxo de aposta)
+
+```
+jogador          games :4001            RabbitMQ               wallets :4002
+   │                  │                     │                        │
+   │── POST /bet ────►│                     │                        │
+   │                  │── WalletDebitRequested ──────────────────────►│
+   │◄── 201 betId ────│  (roundId, userId, amountCents, requestId)    │
+   │                  │                     │                        │── debita saldo
+   │                  │                     │◄── WalletDebited ───────│  (ou WalletDebitFailed)
+   │                  │◄── confirma aposta ─│
+   │◄── WS: bet_placed│    (ou cancela)     │
+```
+
+**Por que coreografia e não orquestração?** Nenhum dos serviços conhece o outro diretamente — eles apenas publicam e consomem eventos. Isso facilita adicionar novos consumidores (ex.: serviço de antifraude) sem alterar o código existente.
+
+**Trade-off:** Dificulta o rastreamento de fluxos com falha (não há um "processo central" para inspecionar). Mitigado pelo `requestId` único rastreável nos logs de ambos os serviços.
+
+---
+
+#### 3. Comunicação síncrona vs. assíncrona
+
+| Caminho | Protocolo | Motivo |
+|---|---|---|
+| Frontend → games (round state) | WebSocket (socket.io) | Atualizações sub-segundo do multiplicador; HTTP polling seria caro |
+| Frontend → games/wallets (REST) | HTTP via Kong | Ações pontuais (apostar, sacar, verificar saldo) |
+| games → wallets (debit/credit) | AMQP (RabbitMQ) | Desacoplamento temporal; wallets pode estar temporariamente offline sem perder mensagens |
+
+---
+
+#### 4. Algoritmo Provably Fair
+
+O ponto de crash é determinístico e verificável *após* cada rodada:
+
+```
+h = HMAC-SHA256(key = serverSeed, data = salt)
+n = parseInt(h[0..12], 16)          // 52 bits do hash
+e = 2^52
+
+rawCrash = (100 * e - n) / (e - n)
+crashPoint = max(1.00, floor(rawCrash) / 100)
+```
+
+**Protocolo de verificação:**
+1. Antes da rodada: servidor publica `SHA256("public" || serverSeed)` como `serverSeedHash`
+2. Após a rodada: servidor revela `serverSeed` e `salt`
+3. Jogador verifica: `SHA256("public" || serverSeed) == serverSeedHash` ✓ e recomputa o crash
+
+**Trade-off:** O `salt` é gerado pelo servidor (não pelo jogador), então o jogador precisa confiar que o salt não foi manipulado post-hoc. Um sistema completo usaria um salt commitado pelo jogador antes de cada rodada.
+
+---
+
+#### 5. Decisões técnicas pontuais
 
 | Decisão | Motivo |
 |---|---|
-| Prisma `output = "../node_modules/.prisma/client"` | Bun usa symlinks no `node_modules`; output explícito garante que o client gerado fique no caminho correto dentro da imagem Docker |
-| `jwtVerify` sem verificação de issuer | Tokens emitidos pelo Keycloak têm `iss: http://localhost:8080/...` mas dentro do Docker o serviço acessa `http://keycloak:8080/...`; verificar o issuer causaria falha em produção |
-| `jose` em vez de `passport-jwt` | Menor footprint de dependências; compatibilidade nativa com Bun |
-| Bun como runtime | Performance superior ao Node.js para I/O intensivo; test runner built-in; instalação de dependências mais rápida |
+| Prisma `output = "../node_modules/.prisma/client"` | Bun usa symlinks no `node_modules`; output explícito garante o caminho correto dentro da imagem Docker |
+| `jwtVerify` sem verificação de `issuer` | `iss` dos tokens usa `localhost:8080` mas dentro do Docker o hostname é `keycloak:8080`; verificar causaria 401 em todos os requests |
+| `jose` em vez de `passport-jwt` | Menor footprint; compatibilidade nativa com Bun sem patches de polyfill |
+| Bun como runtime | Performance superior ao Node.js para I/O; test runner built-in; workspaces nativos |
+| Kong DB-less (declarativo) | Sem banco de dados para o gateway; config versionada no repositório; reinicialização é idempotente |
+| `amountCents` como `bigint` no domínio | Evita erros de ponto-flutuante em cálculos financeiros; serializado como string no JSON |
+| Apostas aceitas de forma otimista (201 imediato) | Reduz latência percebida pelo jogador; o cancelamento assíncrono via `bet_rejected` WS é raro e tratado no frontend |
+
+---
+
+### Estratégia de testes
+
+```
+┌──────────────────────────────────────────────────┐
+│  Unit (bun test tests/unit)                      │
+│  • Round.computeCrashPoint() — algoritmo PF      │
+│  • GameService lógica de estado                  │
+│  • Sem I/O, sem banco, sem rede                  │
+├──────────────────────────────────────────────────┤
+│  E2E (bun test tests/e2e)                        │
+│  • Requer docker compose up -d                   │
+│  • Cenários de negócio contra serviços reais:    │
+│    - Happy path cashout                          │
+│    - Crash (aposta perdida)                      │
+│    - Saldo insuficiente (saga WalletDebitFailed) │
+│    - Aposta dupla (rejeitada com 409/500)        │
+└──────────────────────────────────────────────────┘
+```
 
 ## Variáveis de ambiente
 

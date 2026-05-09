@@ -11,7 +11,7 @@ import ProvablyFairModal from '../components/ProvablyFairModal';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
-  const { wallet, isCreating } = useWallet();
+  const { wallet, isLoading: walletLoading, isCreating } = useWallet();
   const userId = user?.profile?.sub;
   const [showFair, setShowFair] = useState(false);
 
@@ -34,12 +34,14 @@ export default function GamePage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           {/* Balance */}
           <div className="flex items-center gap-2">
             <Wallet size={14} style={{ color: '#4a5568' }} />
             {isCreating ? (
               <span className="text-xs" style={{ color: '#4a5568' }}>Criando carteira…</span>
+            ) : walletLoading ? (
+              <span className="anim-skeleton inline-block" style={{ width: 72, height: 14 }} />
             ) : (
               <span className="text-sm font-bold" style={{ color: '#00ff88' }}>
                 {displayBalance != null
@@ -51,7 +53,7 @@ export default function GamePage() {
 
           {/* Username */}
           {username && (
-            <span className="text-sm hidden sm:block" style={{ color: '#6b7280' }}>
+            <span className="text-sm hidden md:block truncate max-w-30" style={{ color: '#6b7280' }}>
               {username}
             </span>
           )}
@@ -71,7 +73,7 @@ export default function GamePage() {
       </header>
 
       {/* ─── Main ─── */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 space-y-4">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 space-y-3 sm:space-y-4 overflow-x-hidden">
         {/* Crash graph */}
         <CrashGraph />
 
