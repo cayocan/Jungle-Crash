@@ -30,6 +30,7 @@ export function useRoundHistory(page: number, limit = 10) {
       return res.json() as Promise<HistoryPage>;
     },
     placeholderData: (prev) => prev,
+    refetchInterval: 6000,
   });
 }
 

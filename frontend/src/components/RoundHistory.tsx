@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
+import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 
 interface Round {
   id: string;
   crashPoint: string;
   status: string;
+}
+
+interface Props {
+  onVerify?: () => void;
 }
 
 function crashColor(cp: number): { bg: string; text: string; glow: string } {
@@ -15,7 +20,7 @@ function crashColor(cp: number): { bg: string; text: string; glow: string } {
   return { bg: '#1f0a0a', text: '#ff3b3b', glow: '#ff3b3b33' };
 }
 
-export default function RoundHistory() {
+export default function RoundHistory({ onVerify }: Props) {
   const { getToken } = useAuth();
 
   const { data } = useQuery({
@@ -38,9 +43,23 @@ export default function RoundHistory() {
       className="rounded-2xl p-4 h-full"
       style={{ background: '#0d1421', border: '1px solid #1e2d3d' }}
     >
-      <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
-        Histórico de rodadas
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: '#4a5568' }}>
+          Histórico de rodadas
+        </h2>
+        {onVerify && (
+          <button
+            onClick={onVerify}
+            className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
+            style={{ color: '#00ff88', border: '1px solid #00ff8840', background: 'transparent', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#00ff8815'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ShieldCheck size={11} />
+            <span>Verificar</span>
+          </button>
+        )}
+      </div>
 
       {rounds.length === 0 ? (
         <div className="flex flex-wrap gap-1.5 justify-start">

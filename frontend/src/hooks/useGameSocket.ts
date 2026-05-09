@@ -44,6 +44,7 @@ export function useGameSocket(userId?: string) {
     socket.on('round_crashed', (data: { roundId: string; crashPoint: number; serverSeed: string }) => {
       setRoundCrashed(data.crashPoint, data.serverSeed);
       toast.error(`💥 Crashed @ ${Number(data.crashPoint).toFixed(2)}x`, { duration: 3500, id: 'crash' });
+      queryClient.invalidateQueries({ queryKey: ['rounds-history'] });
     });
 
     socket.on('bet_placed', (data: { betId: string; roundId: string; userId: string; amountCents: string }) => {

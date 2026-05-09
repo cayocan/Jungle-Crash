@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, Wallet, ShieldCheck } from 'lucide-react';
+import { LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -56,18 +56,6 @@ export default function GamePage() {
             </span>
           )}
 
-          {/* Provably Fair */}
-          <button
-            onClick={() => setShowFair(true)}
-            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-colors"
-            style={{ color: '#00ff88', border: '1px solid #00ff8840', background: 'transparent' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#00ff8815'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <ShieldCheck size={12} />
-            <span>Verificar</span>
-          </button>
-
           {/* Logout */}
           <button
             onClick={logout}
@@ -93,7 +81,7 @@ export default function GamePage() {
             <BetPanel userId={userId} />
           </div>
           <div className="md:col-span-2">
-            <RoundHistory />
+            <RoundHistory onVerify={() => setShowFair(true)} />
           </div>
         </div>
 
