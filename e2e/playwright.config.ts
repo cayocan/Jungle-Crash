@@ -19,39 +19,24 @@ export default defineConfig({
   },
 
   projects: [
-    // ── 1. Auth setup ──────────────────────────────────────────────────────
+    // ── 1. Auth setup — roda primeiro e salva cookies ──────────────────────
     {
       name: 'setup',
       testMatch: '**/auth.setup.ts',
     },
 
-    // ── 2. Desktop browsers (autenticado) ──────────────────────────────────
+    // ── 2. Desktop Chrome (autenticado) ────────────────────────────────────
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/player.json' },
       dependencies: ['setup'],
-      testIgnore: '**/login.spec.ts', // login.spec roda sem auth
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'], storageState: 'playwright/.auth/player.json' },
-      dependencies: ['setup'],
-      testIgnore: '**/login.spec.ts',
     },
 
-    // ── 3. Mobile (autenticado) ────────────────────────────────────────────
+    // ── 3. Mobile Chrome (autenticado) ─────────────────────────────────────
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 7'], storageState: 'playwright/.auth/player.json' },
       dependencies: ['setup'],
-      testIgnore: '**/login.spec.ts',
-    },
-
-    // ── 4. Testes sem autenticação ─────────────────────────────────────────
-    {
-      name: 'unauthenticated',
-      use: { ...devices['Desktop Chrome'] },
-      testMatch: '**/login.spec.ts',
     },
   ],
 });

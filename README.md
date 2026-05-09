@@ -169,26 +169,24 @@ npx playwright show-report       # relatório HTML após execução
 # Filtros úteis
 npx playwright test api          # só os testes de API
 npx playwright test --project=chromium     # só Chromium
-npx playwright test --project=firefox      # só Firefox
 npx playwright test --project=mobile-chrome
-npx playwright test --project=unauthenticated  # testes sem auth
 ```
 
 | Arquivo | Projeto(s) | O que testa |
 |---|---|---|
 | `auth.setup.ts` | `setup` | Login Keycloak PKCE — persiste storage state para os demais testes |
-| `game.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Estrutura da GamePage, painel de apostas, aba Auto Bet, modal Provably Fair, toggle leaderboard |
-| `login.spec.ts` | `unauthenticated` | Página de login sem auth, redirect para Keycloak, proteção de rota |
-| `api.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Contratos REST via Kong: rounds (shape, paginação, commitamento), leaderboard (sem prejuízo, shape), auth 401, rate limit headers |
-| `wallet.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Exibição de saldo no header, formato monetário, GET /wallets/me autenticado e 401 sem token |
-| `bet-flow.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Validações de input (valor mínimo, vazio, não-numérico), ciclo de aposta, aposta duplicada rejeitada, feedback de UI |
-| `provably-fair.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Modal com hash + crash point, fechar modal, botão ƒ(t), endpoint /verify, hash chain SHA256 verificado em Node |
-| `auto-bet.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Aba Auto Bet: campos de estratégia, Fixo vs Martingale, multiplicador padrão, stop-loss, validações de input |
+| `game.spec.ts` | `chromium`, `mobile-chrome` | Estrutura da GamePage, painel de apostas, aba Auto Bet, modal Provably Fair, toggle leaderboard |
+| `login.spec.ts` | `chromium`, `mobile-chrome` | Página de login sem auth (usa `test.use` para limpar cookies), redirect para Keycloak, proteção de rota |
+| `api.spec.ts` | `chromium`, `mobile-chrome` | Contratos REST via Kong: rounds (shape, paginação, commitamento), leaderboard (sem prejuízo, shape), auth 401, rate limit headers |
+| `wallet.spec.ts` | `chromium`, `mobile-chrome` | Exibição de saldo no header, formato monetário, GET /wallets/me autenticado e 401 sem token |
+| `bet-flow.spec.ts` | `chromium`, `mobile-chrome` | Validações de input (valor mínimo, vazio, não-numérico), ciclo de aposta, aposta duplicada rejeitada, feedback de UI |
+| `provably-fair.spec.ts` | `chromium`, `mobile-chrome` | Modal com hash + crash point, fechar modal, botão ƒ(t), endpoint /verify, hash chain SHA256 verificado em Node |
+| `auto-bet.spec.ts` | `chromium`, `mobile-chrome` | Aba Auto Bet: campos de estratégia, Fixo vs Martingale, multiplicador padrão, stop-loss, validações de input |
 
 **Projetos Playwright:**
 - `setup` → autentica e salva storage state
-- `chromium` + `firefox` + `mobile-chrome` → todos os testes autenticados
-- `unauthenticated` → testes de login sem cookies de sessão
+- `chromium` + `mobile-chrome` → todos os testes autenticados
+- `login.spec.ts` usa `test.use({ storageState: { cookies: [], origins: [] } })` e roda sem auth em qualquer projeto
 
 ---
 
