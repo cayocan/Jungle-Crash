@@ -11,20 +11,24 @@ export interface WalletDto {
 }
 
 export function useWallet() {
-  const { getToken } = useAuth();
+  const { getToken, user } = useAuth();
   const queryClient = useQueryClient();
 
+  const userId = (user?.profile?.sub as string | undefined) ?? null;
+
   const { data: wallet, isLoading } = useQuery({
-    queryKey: ['wallet'],
+    queryKey: ['wallet', userId],
+    enabled: !!userId,
     queryFn: async () => {
+      const token = getToken();
       const res = await fetch(`${API}/me`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error('Failed to fetch wallet');
       return res.json() as Promise<WalletDto>;
     },
-    retry: false,
+    retry: 1,
     refetchInterval: 15_000,
   });
 
@@ -38,7 +42,7 @@ export function useWallet() {
       if (!res.ok) throw new Error('Failed to create wallet');
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallet'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallet', userId] }),
   });
 
   // Auto-create wallet on first login if it doesn't exist yet
