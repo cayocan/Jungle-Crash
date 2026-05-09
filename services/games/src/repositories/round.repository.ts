@@ -185,6 +185,18 @@ export class RoundRepository implements OnModuleDestroy {
         });
     }
 
+    /**
+     * Cancels a pending bet by deleting the bet record linked to the given request ID.
+     * Used when a WalletDebitFailed event is received, rolling back the placed bet.
+     */
+    async cancelBet(requestId: string): Promise<void> {
+        const req = await this.prisma.processedRequest.findUnique({ where: { requestId } });
+        if (!req) return;
+        const betId = (req.meta as any)?.betId as string | undefined;
+        if (!betId) return;
+        await this.prisma.bet.deleteMany({ where: { id: betId, cashedOutAt: null, settledAt: null } });
+    }
+
     /** Marks all uncashed bets in a round as settled with a zero payout (losers). */
     async settleLosers(roundId: string): Promise<void> {
         await this.prisma.bet.updateMany({

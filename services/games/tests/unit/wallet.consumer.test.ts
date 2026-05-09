@@ -3,10 +3,11 @@ import { describe, it, expect } from 'bun:test';
 
 import { WalletEventConsumer } from '../../src/messaging/consumer.service';
 
-function makeConsumer() {
+function makeConsumer(overrides?: { cancelBet?: (requestId: string) => Promise<void> }) {
     // RabbitService is only used in onModuleInit (not called in unit tests)
     const mockRabbit = { consume: async () => {} } as any;
-    return new WalletEventConsumer(mockRabbit);
+    const mockRoundRepo = { cancelBet: overrides?.cancelBet ?? (async () => {}) } as any;
+    return new WalletEventConsumer(mockRabbit, mockRoundRepo);
 }
 
 describe('WalletEventConsumer — handleEvent', () => {
@@ -52,6 +53,33 @@ describe('WalletEventConsumer — handleEvent', () => {
         // No setGateway call — gateway is undefined
         const result = await (consumer as any).handleEvent('WalletDebited', { userId: 'u1', amountCents: '100' });
         expect(result).toBeUndefined();
+    });
+});
+
+describe('WalletEventConsumer — WalletDebitFailed', () => {
+    it('cancels the bet and broadcasts bet_rejected', async () => {
+        const cancelled: string[] = [];
+        const broadcasts: { event: string; payload: any }[] = [];
+
+        const consumer = makeConsumer({ cancelBet: async (id) => { cancelled.push(id); } });
+        consumer.setGateway({ broadcast: (e: string, p: any) => broadcasts.push({ event: e, payload: p }) });
+
+        await consumer.handleEvent('WalletDebitFailed', { requestId: 'r-fail', userId: 'u-fail', reason: 'insufficient funds' });
+
+        expect(cancelled).toEqual(['r-fail']);
+        expect(broadcasts.length).toBe(1);
+        expect(broadcasts[0].event).toBe('bet_rejected');
+        expect(broadcasts[0].payload.requestId).toBe('r-fail');
+        expect(broadcasts[0].payload.reason).toBe('insufficient funds');
+    });
+
+    it('cancels the bet even when no gateway is set', async () => {
+        const cancelled: string[] = [];
+        const consumer = makeConsumer({ cancelBet: async (id) => { cancelled.push(id); } });
+
+        await consumer.handleEvent('WalletDebitFailed', { requestId: 'r2', userId: 'u2', reason: 'insufficient funds' });
+
+        expect(cancelled).toEqual(['r2']);
     });
 });
 

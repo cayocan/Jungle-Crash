@@ -51,7 +51,7 @@ export class WalletRepository implements OnModuleDestroy {
         return this.prisma.outboxEvent.create({ data: { aggregateId: event.aggregateId, eventType: event.eventType, payload: event.payload } });
     }
 
-    async debitWithProcessedRequest(requestId: string, userId: string, amount: bigint, meta?: any): Promise<{ alreadyProcessed: boolean; wallet?: Wallet }> {
+    async debitWithProcessedRequest(requestId: string, userId: string, amount: bigint, meta?: any): Promise<{ alreadyProcessed: boolean; wallet?: Wallet; failed?: boolean; reason?: string }> {
         return this.prisma.$transaction(async (tx) => {
             const existing = await tx.processedRequest.findUnique({ where: { requestId } });
             if (existing) {
@@ -62,7 +62,20 @@ export class WalletRepository implements OnModuleDestroy {
             const w = await tx.wallet.findUnique({ where: { userId } });
             if (!w) throw new Error('wallet not found');
             const current = typeof w.balance === 'bigint' ? w.balance : BigInt(w.balance);
-            if (current < amount) throw new Error('insufficient funds');
+
+            if (current < amount) {
+                // Publish failure event via outbox and record idempotency key so retries are ignored.
+                await tx.outboxEvent.create({
+                    data: {
+                        aggregateId: userId,
+                        eventType: 'WalletDebitFailed',
+                        payload: { requestId, userId, amountCents: amount.toString(), reason: 'insufficient funds' },
+                    },
+                });
+                await tx.processedRequest.create({ data: { requestId, requestType: 'debit_failed', meta } });
+                return { alreadyProcessed: false, failed: true, reason: 'insufficient funds' };
+            }
+
             const newBalance = current - amount;
             const updated = await tx.wallet.update({ where: { userId }, data: { balance: newBalance } });
 
