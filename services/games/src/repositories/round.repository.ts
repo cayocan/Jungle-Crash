@@ -207,6 +207,34 @@ export class RoundRepository implements OnModuleDestroy {
         });
     }
 
+    /**
+     * Returns top N players ranked by total profit (cashoutCents - amountCents)
+     * over a given period. Only settled bets are considered.
+     */
+    async getLeaderboard(limit = 10, periodHours = 24): Promise<Array<{ userId: string; profitCents: bigint; totalBets: number; totalCashoutCents: bigint; totalAmountCents: bigint }>> {
+        const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
+        const rows = await this.prisma.$queryRaw<Array<{ userId: string; profit: bigint; total_bets: bigint; total_cashout: bigint; total_amount: bigint }>>`
+            SELECT
+                "userId",
+                SUM(COALESCE("cashoutCents", 0) - "amountCents") AS profit,
+                COUNT(*) AS total_bets,
+                SUM(COALESCE("cashoutCents", 0)) AS total_cashout,
+                SUM("amountCents") AS total_amount
+            FROM "Bet"
+            WHERE "settledAt" IS NOT NULL AND "placedAt" >= ${since}
+            GROUP BY "userId"
+            ORDER BY profit DESC
+            LIMIT ${limit}
+        `;
+        return rows.map((r) => ({
+            userId: r.userId,
+            profitCents: BigInt(r.profit),
+            totalBets: Number(r.total_bets),
+            totalCashoutCents: BigInt(r.total_cashout),
+            totalAmountCents: BigInt(r.total_amount),
+        }));
+    }
+
     /** Disconnects the Prisma client when the module is torn down. */
     async onModuleDestroy() {
         try { await this.prisma.$disconnect(); } catch { }

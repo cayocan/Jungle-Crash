@@ -8,6 +8,7 @@ import BetPanel from '../components/BetPanel';
 import BetHistory from '../components/BetHistory';
 import RoundHistory from '../components/RoundHistory';
 import ProvablyFairModal from '../components/ProvablyFairModal';
+import Leaderboard from '../components/Leaderboard';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
@@ -89,6 +90,9 @@ export default function GamePage() {
 
         {/* Live bets table */}
         <BetHistory />
+
+        {/* Leaderboard */}
+        <Leaderboard />
       </main>
 
       {showFair && <ProvablyFairModal onClose={() => setShowFair(false)} />}

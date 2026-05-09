@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { GamesController } from './presentation/controllers/games.controller';
 import { RoundsController } from './presentation/controllers/rounds.controller';
 import { BetController } from './presentation/controllers/bet.controller';
+import { LeaderboardController } from './presentation/controllers/leaderboard.controller';
 import { GameGateway } from './presentation/gateways/game.gateway';
 import { RoundRepository } from './repositories/round.repository';
 import { RabbitService } from './messaging/rabbit.service';
@@ -11,7 +12,7 @@ import { WalletEventConsumer } from './messaging/consumer.service';
 import { GameService } from './application/game.service';
 
 @Module({
-  controllers: [GamesController, RoundsController, BetController],
+  controllers: [GamesController, RoundsController, BetController, LeaderboardController],
   providers: [
     {
       provide: PrismaClient,
