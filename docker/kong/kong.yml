@@ -1,5 +1,14 @@
 _format_version: "3.0"
 
+plugins:
+  # Global rate limit: 120 requests/minute per consumer IP
+  - name: rate-limiting
+    config:
+      minute: 120
+      policy: local
+      limit_by: ip
+      hide_client_headers: false
+
 services:
   - name: games-service
     url: http://games:4001
@@ -8,6 +17,18 @@ services:
         paths:
           - /games
         strip_path: true
+      - name: games-bet-route
+        paths:
+          - /games/bet
+        strip_path: true
+        plugins:
+          # Stricter limit on bet endpoint: 20 bets/minute per IP
+          - name: rate-limiting
+            config:
+              minute: 20
+              policy: local
+              limit_by: ip
+              hide_client_headers: false
 
   - name: wallets-service
     url: http://wallets:4002
