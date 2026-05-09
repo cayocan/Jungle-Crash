@@ -7,8 +7,10 @@ type Period = '24' | '168';
 interface LeaderboardEntry {
   rank: number;
   userId: string;
-  profitCents: string;
-  totalBets: number;
+  bestProfitCents: string;
+  bestAmountCents: string;
+  bestCashoutCents: string;
+  bestMultiplier: number;
 }
 
 interface LeaderboardResponse {
@@ -47,7 +49,7 @@ export default function Leaderboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: '#6b7280' }}>
           <Trophy size={14} style={{ color: '#ffd700' }} />
-          Leaderboard
+          Maiores ganhos
         </h2>
         <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #1e2d3d' }}>
           {(['24', '168'] as Period[]).map((p) => (
@@ -77,13 +79,13 @@ export default function Leaderboard() {
         </div>
       ) : !data?.data.length ? (
         <p className="text-xs text-center py-4" style={{ color: '#374151' }}>
-          Nenhuma aposta liquidada neste período.
+          Nenhum cashout lucrativo neste período.
         </p>
       ) : (
         <div className="space-y-1">
           {data.data.map((entry) => {
-            const profit = Number(entry.profitCents) / 100;
-            const isPositive = profit >= 0;
+            const profit = Number(entry.bestProfitCents) / 100;
+            const multiplier = entry.bestMultiplier;
             return (
               <div
                 key={entry.userId}
@@ -102,17 +104,17 @@ export default function Leaderboard() {
                   {entry.userId.slice(0, 8)}…
                 </span>
 
-                {/* Bets count */}
-                <span className="text-xs" style={{ color: '#4a5568' }}>
-                  {entry.totalBets}x
+                {/* Best multiplier */}
+                <span className="text-xs font-bold tabular-nums" style={{ color: '#ffd700', minWidth: 44, textAlign: 'right' }}>
+                  {multiplier.toFixed(2)}x
                 </span>
 
-                {/* Profit */}
+                {/* Best single-round profit */}
                 <span
-                  className="text-sm font-bold text-right"
-                  style={{ color: isPositive ? '#00ff88' : '#ff3b3b', minWidth: 80 }}
+                  className="text-sm font-bold text-right tabular-nums"
+                  style={{ color: '#00ff88', minWidth: 80 }}
                 >
-                  {isPositive ? '+' : ''}R$ {profit.toFixed(2)}
+                  +R$ {profit.toFixed(2)}
                 </span>
               </div>
             );

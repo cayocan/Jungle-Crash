@@ -265,31 +265,76 @@ export class RoundRepository implements OnModuleDestroy {
     }
 
     /**
-     * Returns top N players ranked by total profit (cashoutCents - amountCents)
-     * over a given period. Only settled bets are considered.
+     * Returns top N players ranked by their BEST single-round profit
+     * (cashoutCents - amountCents) within a given period.
+     * Only cashout wins are considered — losses and net-negative players are excluded.
      */
-    async getLeaderboard(limit = 10, periodHours = 24): Promise<Array<{ userId: string; profitCents: bigint; totalBets: number; totalCashoutCents: bigint; totalAmountCents: bigint }>> {
+    async getLeaderboard(limit = 10, periodHours = 24): Promise<Array<{
+        userId: string;
+        bestProfitCents: bigint;
+        bestAmountCents: bigint;
+        bestCashoutCents: bigint;
+        bestMultiplier: number;
+    }>> {
         const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
-        const rows = await this.prisma.$queryRaw<Array<{ userId: string; profit: bigint; total_bets: bigint; total_cashout: bigint; total_amount: bigint }>>`
+        // Subquery finds, for each user, the single bet with the highest profit.
+        // FILTER ensures we only look at cashed-out bets with positive profit.
+        const rows = await this.prisma.$queryRaw<Array<{
+            userId: string;
+            best_profit: bigint;
+            best_amount: bigint;
+            best_cashout: bigint;
+        }>>`
             SELECT
                 "userId",
-                SUM(COALESCE("cashoutCents", 0) - "amountCents") AS profit,
-                COUNT(*) AS total_bets,
-                SUM(COALESCE("cashoutCents", 0)) AS total_cashout,
-                SUM("amountCents") AS total_amount
-            FROM "Bet"
-            WHERE "settledAt" IS NOT NULL AND "placedAt" >= ${since}
-            GROUP BY "userId"
-            ORDER BY profit DESC
+                MAX("cashoutCents" - "amountCents") AS best_profit,
+                (
+                    SELECT b2."amountCents"
+                    FROM "Bet" b2
+                    WHERE b2."userId" = b."userId"
+                      AND b2."settledAt" IS NOT NULL
+                      AND b2."placedAt" >= ${since}
+                      AND b2."cashoutCents" IS NOT NULL
+                      AND b2."cashoutCents" > b2."amountCents"
+                    ORDER BY (b2."cashoutCents" - b2."amountCents") DESC
+                    LIMIT 1
+                ) AS best_amount,
+                (
+                    SELECT b2."cashoutCents"
+                    FROM "Bet" b2
+                    WHERE b2."userId" = b."userId"
+                      AND b2."settledAt" IS NOT NULL
+                      AND b2."placedAt" >= ${since}
+                      AND b2."cashoutCents" IS NOT NULL
+                      AND b2."cashoutCents" > b2."amountCents"
+                    ORDER BY (b2."cashoutCents" - b2."amountCents") DESC
+                    LIMIT 1
+                ) AS best_cashout
+            FROM "Bet" b
+            WHERE
+                b."settledAt" IS NOT NULL
+                AND b."placedAt" >= ${since}
+                AND b."cashoutCents" IS NOT NULL
+                AND b."cashoutCents" > b."amountCents"
+            GROUP BY b."userId"
+            ORDER BY best_profit DESC
             LIMIT ${limit}
         `;
-        return rows.map((r) => ({
-            userId: r.userId,
-            profitCents: BigInt(r.profit),
-            totalBets: Number(r.total_bets),
-            totalCashoutCents: BigInt(r.total_cashout),
-            totalAmountCents: BigInt(r.total_amount),
-        }));
+        return rows.map((r) => {
+            const profit   = BigInt(r.best_profit);
+            const amount   = BigInt(r.best_amount);
+            const cashout  = BigInt(r.best_cashout);
+            const multiplier = amount > 0n
+                ? Math.floor(Number(cashout) / Number(amount) * 100) / 100
+                : 0;
+            return {
+                userId: r.userId,
+                bestProfitCents: profit,
+                bestAmountCents: amount,
+                bestCashoutCents: cashout,
+                bestMultiplier: multiplier,
+            };
+        });
     }
 
     /** Disconnects the Prisma client when the module is torn down. */

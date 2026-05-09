@@ -28,10 +28,10 @@ export class LeaderboardController {
             data: entries.map((e, i) => ({
                 rank: i + 1,
                 userId: e.userId,
-                profitCents: e.profitCents.toString(),
-                totalBets: e.totalBets,
-                totalCashoutCents: e.totalCashoutCents.toString(),
-                totalAmountCents: e.totalAmountCents.toString(),
+                bestProfitCents: e.bestProfitCents.toString(),
+                bestAmountCents: e.bestAmountCents.toString(),
+                bestCashoutCents: e.bestCashoutCents.toString(),
+                bestMultiplier: e.bestMultiplier,
             })),
         };
     }

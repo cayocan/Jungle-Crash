@@ -36,7 +36,7 @@ function Wait-For-Postgres {
 
 # ─── Step 1: Auto-create .env files from .env.example (fresh clone support) ───
 Write-Host ""
-Write-Host "=== [1/4] Checking environment files... ==="
+Write-Host "=== [1/6] Checking environment files... ==="
 $envPairs = @(
   @{ src = "services/games/.env.example";   dst = "services/games/.env" },
   @{ src = "services/wallets/.env.example"; dst = "services/wallets/.env" },
@@ -53,7 +53,7 @@ foreach ($pair in $envPairs) {
 
 # ─── Step 2: Build and start all containers ─────────────────────────────────
 Write-Host ""
-Write-Host "=== [2/4] Starting Docker Compose (build + detach)... ==="
+Write-Host "=== [2/6] Starting Docker Compose (build + detach)... ==="
 docker compose up --build -d
 if ($LASTEXITCODE -ne 0) {
   Write-Error "docker compose up failed"
@@ -62,7 +62,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # ─── Step 3: Wait for Postgres, then run migrations from host ────────────────
 Write-Host ""
-Write-Host "=== [3/4] Waiting for PostgreSQL... ==="
+Write-Host "=== [3/6] Waiting for PostgreSQL... ==="
 if (-not (Wait-For-Postgres -Retries 90 -DelaySeconds 2)) {
   Write-Error "Postgres readiness timeout. Aborting."
   exit 1
@@ -108,9 +108,82 @@ if ($bunExe) {
   Write-Warning "bun not found on host — skipping host-side migrations (services handle them at startup via CMD)."
 }
 
-# ─── Step 4: Tail logs ──────────────────────────────────────────────────────
+# ─── Step 4: Run unit tests ──────────────────────────────────────────────────
 Write-Host ""
-Write-Host "=== [4/4] All services started. Tailing logs (Ctrl+C to stop) ==="
+Write-Host "=== [4/6] Running unit tests... ==="
+$unitsFailed = $false
+if ($bunExe) {
+  $gamesUnit = & $bunExe test --cwd services/games tests/unit 2>&1
+  $gamesUnit | Write-Host
+  if ($LASTEXITCODE -ne 0) { $unitsFailed = $true }
+
+  $walletsUnit = & $bunExe test --cwd services/wallets tests/unit 2>&1
+  $walletsUnit | Write-Host
+  if ($LASTEXITCODE -ne 0) { $unitsFailed = $true }
+
+  if ($unitsFailed) {
+    Write-Warning "Some unit tests failed — check output above."
+  } else {
+    Write-Host "All unit tests passed."
+  }
+} else {
+  Write-Warning "bun not found — skipping unit tests."
+}
+
+# ─── Step 5: Run Playwright E2E tests ────────────────────────────────────────
+Write-Host ""
+Write-Host "=== [5/6] Waiting for services to be healthy before Playwright... ==="
+
+function Wait-For-Http {
+  param([string]$Url, [int]$Retries = 30, [int]$DelaySeconds = 3)
+  for ($i = 1; $i -le $Retries; $i++) {
+    try {
+      $r = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+      if ($r.StatusCode -lt 500) { return $true }
+    } catch { }
+    Write-Host "  Waiting for $Url (attempt $i/$Retries)..."
+    Start-Sleep -Seconds $DelaySeconds
+  }
+  return $false
+}
+
+$frontendReady = Wait-For-Http -Url "http://localhost:3000" -Retries 30 -DelaySeconds 3
+$gamesReady    = Wait-For-Http -Url "http://localhost:4001/health" -Retries 30 -DelaySeconds 3
+
+if (-not $frontendReady) {
+  Write-Warning "Frontend did not become ready — skipping Playwright tests."
+} elseif (-not $gamesReady) {
+  Write-Warning "Games service did not become ready — skipping Playwright tests."
+} else {
+  Write-Host "Services are ready. Running Playwright tests..."
+
+  # Install browsers if not already installed
+  $pwBrowsers = Join-Path $PSScriptRoot "..\e2e\node_modules\.bin\playwright"
+  Push-Location (Join-Path $PSScriptRoot "..\e2e")
+  try {
+    # Ensure node_modules exist for e2e package
+    if ($bunExe) { & $bunExe install 2>&1 | Out-Null }
+
+    $pwExe = Resolve-Path "node_modules\.bin\playwright" -ErrorAction SilentlyContinue
+    if (-not $pwExe) {
+      Write-Warning "Playwright not installed in e2e/ — run 'bun run test:playwright:install' first."
+    } else {
+      npx playwright install --with-deps chromium 2>&1 | Out-Null
+      npx playwright test 2>&1
+      if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Some Playwright tests failed — run 'bun run test:playwright' to see the full report."
+      } else {
+        Write-Host "All Playwright tests passed."
+      }
+    }
+  } finally {
+    Pop-Location
+  }
+}
+
+# ─── Step 6: Tail logs ──────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "=== [6/6] All services started. Tailing logs (Ctrl+C to stop) ==="
 Write-Host ""
 Write-Host "  Frontend  → http://localhost:3000"
 Write-Host "  Games API → http://localhost:4001/docs"
