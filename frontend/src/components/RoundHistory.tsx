@@ -5,7 +5,14 @@ interface Round {
   id: string;
   crashPoint: string;
   status: string;
-  endsAt: string | null;
+}
+
+function crashColor(cp: number): { bg: string; text: string; glow: string } {
+  if (cp >= 10) return { bg: '#0a1f10', text: '#00ff88', glow: '#00ff8844' };
+  if (cp >= 3)  return { bg: '#0d1a10', text: '#4ade80', glow: '#4ade8033' };
+  if (cp >= 2)  return { bg: '#1a1f0a', text: '#ffd700', glow: '#ffd70033' };
+  if (cp >= 1.5) return { bg: '#1f180a', text: '#f97316', glow: '#f9731633' };
+  return { bg: '#1f0a0a', text: '#ff3b3b', glow: '#ff3b3b33' };
 }
 
 export default function RoundHistory() {
@@ -14,36 +21,57 @@ export default function RoundHistory() {
   const { data } = useQuery({
     queryKey: ['round-history'],
     queryFn: async () => {
-      const res = await fetch('/games/rounds/history?limit=10', {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch history');
+      const token = getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/games/rounds/history?limit=20', { headers });
+      if (!res.ok) throw new Error('Failed');
       return res.json() as Promise<{ rounds: Round[] }>;
     },
-    refetchInterval: 5000,
+    refetchInterval: 8000,
   });
 
   const rounds = data?.rounds ?? [];
 
   return (
-    <div style={{ background: '#1a1a1a', borderRadius: '0.75rem', padding: '1rem' }}>
-      <h2 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '0.875rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        Histórico
+    <div
+      className="rounded-2xl p-4 h-full"
+      style={{ background: '#0d1421', border: '1px solid #1e2d3d' }}
+    >
+      <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+        Histórico de rodadas
       </h2>
-      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-        {rounds.length === 0 ? (
-          <p style={{ color: '#555', fontSize: '0.875rem' }}>Sem histórico ainda</p>
-        ) : (
-          rounds.map((r) => (
-            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', borderBottom: '1px solid #222', fontSize: '0.875rem' }}>
-              <span style={{ color: '#888', fontSize: '0.75rem' }}>{r.id.slice(0, 8)}…</span>
-              <span style={{ color: Number(r.crashPoint) >= 2 ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>
-                {Number(r.crashPoint).toFixed(2)}x
-              </span>
-            </div>
-          ))
-        )}
-      </div>
+
+      {rounds.length === 0 ? (
+        <div className="flex flex-wrap gap-1.5 justify-start">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-6 w-14 rounded" style={{ background: '#1e2d3d', animation: 'pulse 2s ease infinite' }} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {rounds.map((r) => {
+            const cp = Number(r.crashPoint);
+            const { bg, text, glow } = crashColor(cp);
+            return (
+              <div
+                key={r.id}
+                className="text-xs font-bold px-2 py-1 rounded-lg tabular-nums"
+                style={{
+                  background: bg,
+                  color: text,
+                  border: `1px solid ${glow}`,
+                  boxShadow: `0 0 6px ${glow}`,
+                  letterSpacing: '-0.02em',
+                }}
+                title={`Round ${r.id.slice(0, 8)}`}
+              >
+                {cp.toFixed(2)}x
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

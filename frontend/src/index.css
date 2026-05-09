@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-neon: #00ff88;
+  --color-neon-dim: #00cc6a;
+  --color-crash: #ff3b3b;
+  --color-gold: #ffd700;
+  --color-surface: #0d1421;
+  --color-surface-2: #111927;
+  --color-border: #1e2d3d;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #050810;
+  color: #f0f0f0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 2px; }
+
+/* Neon glow pulse for multiplier */
+@keyframes neon-pulse {
+  0%, 100% { text-shadow: 0 0 20px #00ff8888, 0 0 40px #00ff8844; }
+  50%       { text-shadow: 0 0 40px #00ff88cc, 0 0 80px #00ff8866; }
+}
+
+@keyframes crash-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  40%       { transform: translateX(4px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.anim-neon-pulse { animation: neon-pulse 1.5s ease-in-out infinite; }
+.anim-crash-shake { animation: crash-shake 0.4s ease; }
+.anim-fade-in { animation: fade-in 0.3s ease; }
+.anim-spin { animation: spin 1s linear infinite; }
