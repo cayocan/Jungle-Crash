@@ -1,4 +1,5 @@
-import { LogOut, Wallet } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, Wallet, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -6,11 +7,13 @@ import CrashGraph from '../components/CrashGraph';
 import BetPanel from '../components/BetPanel';
 import BetHistory from '../components/BetHistory';
 import RoundHistory from '../components/RoundHistory';
+import ProvablyFairModal from '../components/ProvablyFairModal';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
   const { wallet, isCreating } = useWallet();
   const userId = user?.profile?.sub;
+  const [showFair, setShowFair] = useState(false);
 
   useGameSocket(userId);
 
@@ -53,6 +56,18 @@ export default function GamePage() {
             </span>
           )}
 
+          {/* Provably Fair */}
+          <button
+            onClick={() => setShowFair(true)}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style={{ color: '#00ff88', border: '1px solid #00ff8840', background: 'transparent' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#00ff8815'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ShieldCheck size={12} />
+            <span>Verificar</span>
+          </button>
+
           {/* Logout */}
           <button
             onClick={logout}
@@ -85,6 +100,8 @@ export default function GamePage() {
         {/* Live bets table */}
         <BetHistory />
       </main>
+
+      {showFair && <ProvablyFairModal onClose={() => setShowFair(false)} />}
     </div>
   );
 }
