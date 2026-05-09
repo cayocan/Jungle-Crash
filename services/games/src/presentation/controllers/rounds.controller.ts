@@ -11,6 +11,7 @@ function serializeRound(round: Round, includeServerSeed = false) {
         status: round.status,
         serverSeedHash: round.serverSeedHash,
         serverSeed: includeServerSeed ? round.serverSeed : undefined,
+        salt: includeServerSeed ? round.salt : undefined,
         crashPoint: round.status === 'SETTLED' || includeServerSeed ? round.crashPoint : undefined,
         startsAt: round.startsAt?.toISOString(),
         endsAt: round.endsAt?.toISOString(),
@@ -70,8 +71,12 @@ export class RoundsController {
             roundId,
             serverSeed: round.serverSeed,
             serverSeedHash: round.serverSeedHash,
+            salt: round.salt,
             crashPoint: round.crashPoint,
-            howToVerify: 'HMAC-SHA256(serverSeed, "public") must equal serverSeedHash. Then compute crash point using the same algorithm.',
+            howToVerify: [
+                '1. Confirm commitment: HMAC-SHA256(key="public", data=serverSeed) must equal serverSeedHash.',
+                '2. Recompute crash: h=HMAC-SHA256(key=serverSeed, data=salt); n=parseInt(h[0..12],16); e=2^52; crash=max(1.00, floor((100*e-n)/(e-n))/100).',
+            ],
         };
     }
 }

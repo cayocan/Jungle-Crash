@@ -22,6 +22,7 @@ export type RoundProps = {
     serverSeed?: string;
     serverSeedHash?: string;
     crashPoint?: number;
+    salt?: string;
     createdAt?: Date;
     updatedAt?: Date;
     bets?: BetProps[];
@@ -46,7 +47,7 @@ export class Round {
         const salt = randomBytes(8).toString('hex');
         const crashPoint = Round.computeCrashPoint(serverSeed, salt);
         const serverSeedHash = createHmac('sha256', 'public').update(serverSeed).digest('hex');
-        return new Round({ status: 'PENDING', serverSeed, serverSeedHash, crashPoint });
+        return new Round({ status: 'PENDING', serverSeed, serverSeedHash, crashPoint, salt });
     }
 
     /** Deterministic crash point from HMAC-SHA256 (provably fair). */
@@ -63,6 +64,7 @@ export class Round {
     get serverSeed() { return this._props.serverSeed; }
     get serverSeedHash() { return this._props.serverSeedHash; }
     get crashPoint() { return this._props.crashPoint ?? 1.0; }
+    get salt() { return this._props.salt; }
     get startsAt() { return this._props.startsAt; }
     get endsAt() { return this._props.endsAt; }
     get createdAt() { return this._props.createdAt; }
@@ -98,7 +100,7 @@ export class Round {
             serverSeed: this._props.serverSeed,
             serverSeedHash: this._props.serverSeedHash,
             provablyFair: this._props.crashPoint !== undefined
-                ? { crashPoint: this._props.crashPoint }
+                ? { crashPoint: this._props.crashPoint, salt: this._props.salt }
                 : undefined,
         };
     }
@@ -111,6 +113,7 @@ export class Round {
      */
     static fromPrisma(row: any, bets?: any[]): Round {
         const crashPoint = row.provablyFair ? (row.provablyFair as any).crashPoint : undefined;
+        const salt = row.provablyFair ? (row.provablyFair as any).salt : undefined;
         return new Round({
             id: row.id,
             status: row.status as RoundStatus,
@@ -119,6 +122,7 @@ export class Round {
             serverSeed: row.serverSeed ?? undefined,
             serverSeedHash: row.serverSeedHash ?? undefined,
             crashPoint,
+            salt,
             createdAt: row.createdAt ?? undefined,
             updatedAt: row.updatedAt ?? undefined,
             bets: bets?.map((b) => ({
