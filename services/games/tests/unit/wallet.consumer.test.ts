@@ -3,20 +3,30 @@ import { describe, it, expect } from 'bun:test';
 
 import { WalletEventConsumer } from '../../src/messaging/consumer.service';
 
-function makeConsumer(overrides?: { cancelBet?: (requestId: string) => Promise<void> }) {
+function makeConsumer(overrides?: {
+    cancelBet?: (requestId: string) => Promise<void>;
+    confirmBetDebit?: (requestId: string) => Promise<any>;
+    findById?: (id: string) => Promise<any>;
+}) {
     // RabbitService is only used in onModuleInit (not called in unit tests)
     const mockRabbit = { consume: async () => {} } as any;
-    const mockRoundRepo = { cancelBet: overrides?.cancelBet ?? (async () => {}) } as any;
+    const mockRoundRepo = {
+        cancelBet: overrides?.cancelBet ?? (async () => {}),
+        confirmBetDebit: overrides?.confirmBetDebit ?? (async () => null),
+        findById: overrides?.findById ?? (async () => null),
+    } as any;
     return new WalletEventConsumer(mockRabbit, mockRoundRepo);
 }
 
 describe('WalletEventConsumer — handleEvent', () => {
     it('broadcasts balance_updated with type=debit for WalletDebited', async () => {
         const broadcasts: { event: string; payload: any }[] = [];
-        const consumer = makeConsumer();
+        const consumer = makeConsumer({
+            confirmBetDebit: async () => null, // no bet linked to this requestId
+        });
         consumer.setGateway({ broadcast: (e: string, p: any) => broadcasts.push({ event: e, payload: p }) });
 
-        await (consumer as any).handleEvent('WalletDebited', { userId: 'u1', amountCents: '500' });
+        await (consumer as any).handleEvent('WalletDebited', { requestId: 'req-1', userId: 'u1', amountCents: '500' });
 
         expect(broadcasts.length).toBe(1);
         expect(broadcasts[0].event).toBe('balance_updated');
@@ -49,9 +59,9 @@ describe('WalletEventConsumer — handleEvent', () => {
     });
 
     it('does not crash when no gateway is set (optional chaining)', async () => {
-        const consumer = makeConsumer();
+        const consumer = makeConsumer({ confirmBetDebit: async () => null });
         // No setGateway call — gateway is undefined
-        const result = await (consumer as any).handleEvent('WalletDebited', { userId: 'u1', amountCents: '100' });
+        const result = await (consumer as any).handleEvent('WalletDebited', { requestId: 'req-2', userId: 'u1', amountCents: '100' });
         expect(result).toBeUndefined();
     });
 });

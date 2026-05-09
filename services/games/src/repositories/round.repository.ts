@@ -149,6 +149,7 @@ export class RoundRepository implements OnModuleDestroy {
             const bet = await tx.bet.findUnique({ where: { id: betId } });
             if (!bet) throw new Error('bet not found');
             if (bet.cashedOutAt) throw new Error('already cashed out');
+            if (!bet.walletConfirmed) throw new Error('wallet debit not yet confirmed — bet is pending');
 
             const amountCents = typeof bet.amountCents === 'bigint' ? bet.amountCents : BigInt(bet.amountCents);
             const cashoutCents = BigInt(Math.floor(Number(amountCents) * multiplier));
@@ -199,11 +200,67 @@ export class RoundRepository implements OnModuleDestroy {
         await this.prisma.bet.deleteMany({ where: { id: betId, cashedOutAt: null, settledAt: null } });
     }
 
-    /** Marks all uncashed bets in a round as settled with a zero payout (losers). */
+    /** Marks all uncashed **wallet-confirmed** bets in a round as settled with a zero payout (losers).
+     *  Bets where walletConfirmed=false are left untouched — they will be removed when
+     *  WalletDebitFailed arrives, or refunded if WalletDebited arrives after the round settled.
+     */
     async settleLosers(roundId: string): Promise<void> {
         await this.prisma.bet.updateMany({
-            where: { roundId, cashedOutAt: null, settledAt: null },
+            where: { roundId, cashedOutAt: null, settledAt: null, walletConfirmed: true },
             data: { settledAt: new Date(), cashoutCents: BigInt(0) },
+        });
+    }
+
+    /**
+     * Marks the bet linked to `requestId` as wallet-confirmed.
+     * Called when WalletDebited is received from the saga.
+     * Returns the confirmed bet so callers can handle edge cases
+     * (e.g., refund if round already settled).
+     */
+    async confirmBetDebit(requestId: string): Promise<{ betId: string; roundId: string; userId: string; amountCents: bigint } | null> {
+        const req = await this.prisma.processedRequest.findUnique({ where: { requestId } });
+        if (!req) return null;
+        const betId = (req.meta as any)?.betId as string | undefined;
+        if (!betId) return null;
+
+        const bet = await this.prisma.bet.findUnique({ where: { id: betId } });
+        if (!bet) return null; // already cancelled
+
+        await this.prisma.bet.update({ where: { id: betId }, data: { walletConfirmed: true } });
+        return {
+            betId: bet.id,
+            roundId: bet.roundId,
+            userId: bet.userId,
+            amountCents: typeof bet.amountCents === 'bigint' ? bet.amountCents : BigInt(bet.amountCents),
+        };
+    }
+
+    /**
+     * Enqueues a WalletCreditRequested refund for a bet that was wallet-debited
+     * but whose round settled before wallet confirmation arrived.
+     * This makes the player whole after a rare timing edge case.
+     */
+    async issueRefund(betId: string, refundRequestId: string, amountCents: bigint): Promise<void> {
+        const bet = await this.prisma.bet.findUnique({ where: { id: betId } });
+        if (!bet) return;
+        await this.prisma.$transaction(async (tx) => {
+            await tx.outboxEvent.create({
+                data: {
+                    aggregateId: bet.roundId,
+                    eventType: 'WalletCreditRequested',
+                    payload: {
+                        requestId: refundRequestId,
+                        userId: bet.userId,
+                        amountCents: amountCents.toString(),
+                        metadata: { reason: 'refund_bet_late_confirmation', betId },
+                    },
+                },
+            });
+            // Mark the bet as settled with the refunded amount so it's not orphaned.
+            await tx.bet.update({
+                where: { id: betId },
+                data: { settledAt: new Date(), cashoutCents: BigInt(0) },
+            });
         });
     }
 

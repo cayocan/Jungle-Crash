@@ -161,7 +161,7 @@ export class GameService implements OnModuleInit {
             const liveRound = this.currentRound;
             if (liveRound) {
                 const pending = liveRound.bets.filter(
-                    (b) => !b.cashedOutAt && b.autoCashoutAt != null && this.currentMultiplier >= b.autoCashoutAt!
+                    (b) => !b.cashedOutAt && b.autoCashoutAt != null && b.walletConfirmed && this.currentMultiplier >= b.autoCashoutAt!
                 );
                 for (const bet of pending) {
                     try {

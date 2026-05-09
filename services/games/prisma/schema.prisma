@@ -41,6 +41,7 @@ model Bet {
   cashoutCents         BigInt?
   multiplierAtCashout  String?
   autoCashoutAt        Float?
+  walletConfirmed      Boolean  @default(false)
   placedAt             DateTime @default(now())
   cashedOutAt          DateTime?
   settledAt            DateTime?
