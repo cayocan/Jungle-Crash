@@ -1,0 +1,185 @@
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+import { Round, BetProps } from '../domain/round';
+
+@Injectable()
+export class RoundRepository implements OnModuleDestroy {
+  private readonly prisma: PrismaClient;
+
+  constructor(@Optional() prisma?: PrismaClient) {
+    this.prisma = prisma ?? new PrismaClient();
+  }
+
+  async create(round: Round): Promise<Round> {
+    const { id, ...data } = round.toPrisma();
+    const created = await this.prisma.round.create({ data: data as any });
+    return Round.fromPrisma(created);
+  }
+
+  async save(round: Round): Promise<Round> {
+    const { id, ...data } = round.toPrisma();
+    const updated = await this.prisma.round.update({
+      where: { id: id! },
+      data: {
+        status: data.status as any,
+        startsAt: data.startsAt,
+        endsAt: data.endsAt,
+        provablyFair: data.provablyFair as any,
+      },
+    });
+    return Round.fromPrisma(updated);
+  }
+
+  async findById(id: string): Promise<Round | null> {
+    const row = await this.prisma.round.findUnique({ where: { id }, include: { bets: true } });
+    if (!row) return null;
+    return Round.fromPrisma(row, row.bets);
+  }
+
+  async findCurrent(): Promise<Round | null> {
+    const row = await this.prisma.round.findFirst({
+      where: { status: { in: ['PENDING', 'OPEN', 'CLOSED'] } },
+      orderBy: { createdAt: 'desc' },
+      include: { bets: true },
+    });
+    if (!row) return null;
+    return Round.fromPrisma(row, row.bets);
+  }
+
+  async findHistory(page = 1, limit = 20): Promise<{ rounds: Round[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [rows, total] = await Promise.all([
+      this.prisma.round.findMany({
+        where: { status: 'SETTLED' },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.round.count({ where: { status: 'SETTLED' } }),
+    ]);
+    return { rounds: rows.map((r) => Round.fromPrisma(r)), total };
+  }
+
+  async findBetsByUser(userId: string, page = 1, limit = 20): Promise<{ bets: BetProps[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [rows, total] = await Promise.all([
+      this.prisma.bet.findMany({
+        where: { userId },
+        orderBy: { placedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.bet.count({ where: { userId } }),
+    ]);
+    return {
+      bets: rows.map((b) => ({
+        id: b.id,
+        roundId: b.roundId,
+        userId: b.userId,
+        amountCents: typeof b.amountCents === 'bigint' ? b.amountCents : BigInt(b.amountCents),
+        cashoutCents: b.cashoutCents != null
+          ? (typeof b.cashoutCents === 'bigint' ? b.cashoutCents : BigInt(b.cashoutCents))
+          : undefined,
+        multiplierAtCashout: b.multiplierAtCashout ?? undefined,
+        placedAt: b.placedAt ?? undefined,
+        cashedOutAt: b.cashedOutAt ?? undefined,
+        settledAt: b.settledAt ?? undefined,
+      })),
+      total,
+    };
+  }
+
+  async placeBet(roundId: string, userId: string, amountCents: bigint, requestId: string): Promise<BetProps> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.processedRequest.findUnique({ where: { requestId } });
+      if (existing) throw new Error('duplicate request');
+
+      const round = await tx.round.findUnique({ where: { id: roundId } });
+      if (!round || round.status !== 'OPEN') throw new Error('round not in betting phase');
+
+      const existingBet = await tx.bet.findFirst({ where: { roundId, userId } });
+      if (existingBet) throw new Error('already bet in this round');
+
+      const bet = await tx.bet.create({
+        data: { roundId, userId, amountCents, placedAt: new Date() },
+      });
+
+      // Publish WalletDebitRequested via outbox
+      await tx.outboxEvent.create({
+        data: {
+          aggregateId: roundId,
+          eventType: 'WalletDebitRequested',
+          payload: { requestId, userId, amountCents: amountCents.toString() },
+        },
+      });
+
+      await tx.processedRequest.create({
+        data: { requestId, requestType: 'place_bet', meta: { betId: bet.id } },
+      });
+
+      return {
+        id: bet.id,
+        roundId: bet.roundId,
+        userId: bet.userId,
+        amountCents: typeof bet.amountCents === 'bigint' ? bet.amountCents : BigInt(bet.amountCents),
+      };
+    });
+  }
+
+  async cashout(betId: string, multiplier: number, requestId: string): Promise<BetProps> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.processedRequest.findUnique({ where: { requestId } });
+      if (existing) throw new Error('duplicate cashout request');
+
+      const bet = await tx.bet.findUnique({ where: { id: betId } });
+      if (!bet) throw new Error('bet not found');
+      if (bet.cashedOutAt) throw new Error('already cashed out');
+
+      const amountCents = typeof bet.amountCents === 'bigint' ? bet.amountCents : BigInt(bet.amountCents);
+      const cashoutCents = BigInt(Math.floor(Number(amountCents) * multiplier));
+
+      const updated = await tx.bet.update({
+        where: { id: betId },
+        data: {
+          cashoutCents,
+          multiplierAtCashout: multiplier.toFixed(2),
+          cashedOutAt: new Date(),
+        },
+      });
+
+      // Publish WalletCreditRequested via outbox
+      await tx.outboxEvent.create({
+        data: {
+          aggregateId: bet.roundId,
+          eventType: 'WalletCreditRequested',
+          payload: { requestId, userId: bet.userId, amountCents: cashoutCents.toString() },
+        },
+      });
+
+      await tx.processedRequest.create({
+        data: { requestId, requestType: 'cashout', meta: { betId } },
+      });
+
+      return {
+        id: updated.id,
+        roundId: updated.roundId,
+        userId: updated.userId,
+        amountCents,
+        cashoutCents,
+        multiplierAtCashout: updated.multiplierAtCashout ?? undefined,
+        cashedOutAt: updated.cashedOutAt ?? undefined,
+      };
+    });
+  }
+
+  async settleLosers(roundId: string): Promise<void> {
+    await this.prisma.bet.updateMany({
+      where: { roundId, cashedOutAt: null, settledAt: null },
+      data: { settledAt: new Date(), cashoutCents: BigInt(0) },
+    });
+  }
+
+  async onModuleDestroy() {
+    try { await this.prisma.$disconnect(); } catch {}
+  }
+}
