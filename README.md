@@ -34,7 +34,8 @@ Jogo de crash gambling full-stack construído com NestJS, React, Keycloak, Rabbi
 | Estilo | Tailwind CSS v4 |
 | Estado servidor | TanStack Query v5 |
 | Estado cliente | Zustand v5 |
-| Testes | Bun test runner |
+| Testes unitários/backend E2E | Bun test runner |
+| Testes browser E2E | Playwright 1.59 |
 | Docs | Swagger / OpenAPI (`@nestjs/swagger`) |
 | Infra | Docker Compose |
 
@@ -55,18 +56,24 @@ bun install
 
 > O monorepo usa workspaces Bun — um único `bun install` na raiz instala tudo.
 
-### 2. Subir o ambiente completo
+### 2. Instalar browsers Playwright (primeira vez)
+
+```bash
+bun run test:playwright:install
+```
+
+### 3. Subir o ambiente completo
 
 ```bash
 bun run docker:up
 ```
 
-O script `docker:up`:
-1. Build de todas as imagens (serviços + frontend)
-2. Sobe todos os containers em background
-3. Aguarda PostgreSQL ficar pronto
-4. Executa `prisma migrate deploy` em cada serviço
-5. Copia `.env.example` → `.env` automaticamente se `.env` não existir
+O script `docker:up` executa 6 etapas automaticamente:
+1. Copia `.env.example` → `.env` se não existir
+2. Build e start de todos os containers
+3. Aguarda PostgreSQL e executa `prisma migrate deploy`
+4. **Roda testes unitários** (games + wallets)
+5. **Roda testes Playwright** (aguarda serviços ficarem healthy)
 6. Exibe logs em follow
 
 ### 3. Acessar
@@ -103,43 +110,68 @@ bun run docker:prune   # Remove tudo (containers, volumes, imagens)
 
 ## Testes
 
+### Comandos rápidos
+
+```bash
+# Todos os unitários (games + wallets)
+bun run test:unit
+
+# Backend E2E (requer docker:up)
+bun run test:e2e:backend
+
+# Playwright — testes de browser E2E
+bun run test:playwright
+
+# Playwright com UI interativa
+bun run test:playwright:ui  # cd e2e && npx playwright test --ui
+```
+
 ### Unitários
 
 ```bash
-# Domínio e lógica de games
 bun test --cwd services/games tests/unit
-
-# Domínio e lógica de wallets
 bun test --cwd services/wallets tests/unit
 ```
 
-**Cobertura unitária:**
-
 | Arquivo | O que testa |
 |---|---|
-| `round.test.ts` | Ciclo de vida do Round (BETTING → RUNNING → CRASHED), invariantes de Bet, `computeCrashPoint()`, verificação de hash chain |
+| `round.test.ts` | Ciclo de vida do Round (BETTING → RUNNING → CRASHED), invariantes de Bet, `computeCrashPoint()`, hash chain |
 | `game.service.test.ts` | Loop de estado do GameService, transições de fase |
 | `outbox.publisher.test.ts` | OutboxWorker: publicação de eventos e idempotência |
-| `wallet.consumer.test.ts` | Consumidor de eventos: WalletDebited, WalletDebitFailed, WalletCredited, confirmação de aposta |
-| `wallet.test.ts` (wallets) | Crédito, débito, saldo insuficiente, precisão com centavos BigInt |
+| `wallet.consumer.test.ts` | WalletDebited, WalletDebitFailed, WalletCredited, confirmação de aposta |
+| `wallet.test.ts` | Crédito, débito, saldo insuficiente, precisão com centavos BigInt |
 
-### E2E (requer `bun run docker:up`)
+### Backend E2E (requer `bun run docker:up`)
 
 ```bash
-# Games — contratos de API + Provably Fair determinístico
 bun test --cwd services/games tests/e2e
-
-# Wallets — CRUD de carteira
 bun test --cwd services/wallets tests/e2e
 ```
 
-**Cobertura E2E:**
+| Arquivo | O que testa |
+|---|---|
+| `game.e2e.test.ts` | GET /rounds/current, GET /rounds/history, POST /bet (401/400), GET /bets/me |
+| `deterministic.e2e.test.ts` | Seeds conhecidas: HMAC-SHA256, rounds no histórico, `/rounds/:id/verify` |
+| `wallet.e2e.test.ts` | POST /wallets, GET /wallets/me |
+
+### Playwright — browser E2E (requer `bun run docker:up`)
+
+```bash
+cd e2e
+npx playwright test              # headless
+npx playwright test --headed     # com browser visível
+npx playwright test --ui         # UI interativa
+npx playwright show-report       # relatório HTML
+```
 
 | Arquivo | O que testa |
 |---|---|
-| `game.e2e.test.ts` | GET /rounds/current, GET /rounds/history, POST /bet (401 sem token, 400 sem valor), GET /bets/me |
-| `deterministic.e2e.test.ts` | Seeds conhecidas: cálculo local HMAC-SHA256, rounds no histórico, endpoint `/rounds/:id/verify` |
-| `wallet.e2e.test.ts` | POST /wallets (cria carteira), GET /wallets/me (retorna saldo) |
+| `auth.setup.ts` | Login Keycloak PKCE — persiste storage state para os demais testes |
+| `game.spec.ts` | Estrutura da GamePage, painel de apostas, aba Auto Bet, modal Provably Fair, toggle leaderboard |
+| `login.spec.ts` | Página de login sem auth, redirect para Keycloak, proteção de rota |
+| `api.spec.ts` | Contratos REST via Kong: rounds, leaderboard (sem prejuízo), auth 401 |
+
+Os projetos Playwright são: `setup` (auth) → `chromium` + `mobile-chrome` (com auth reusado).
 
 ---
 
@@ -153,11 +185,12 @@ Todos os itens bônus do desafio, exceto Observabilidade e Storybook:
 | **Auto cashout** | Campo `autoCashoutAt` na aposta; tick loop dispara cashout automático quando multiplicador >= alvo; UI com input dedicado |
 | **Auto bet** | Componente `AutoBet.tsx` com estratégias Martingale (dobra após derrota) e Valor Fixo; configuração de stop-loss, stop-on-win e máximo de rodadas |
 | **Efeitos sonoros** | Web Audio API procedural (sem arquivos externos): sons distintos para aposta, cashout, crash e tick do multiplicador |
-| **Leaderboard** | Endpoint `/games/leaderboard` retorna top jogadores por lucro (24h / 7d); componente `Leaderboard.tsx` com toggle de período |
+| **Leaderboard** | Top jogadores pelo **maior lucro de uma única rodada** (sem prejuízo, sem somas negativas); toggle 24h / 7d; exibe multiplicador da melhor rodada |
 | **CI pipeline** | GitHub Actions: 3 jobs paralelos — `test-games`, `test-wallets`, `build-frontend`; roda em push/PR para qualquer branch |
 | **Rate limiting** | Kong: 120 req/min global, 30 req/min em `/games`; retorna 429 com headers padrão |
 | **Fórmula da curva na UI** | Botão ƒ(t) no gráfico exibe tooltip com fórmula `m(t) = max(1.0, e^(0.00006·t))` e tabela de exemplos em pontos-chave |
-| **Seed determinística para E2E** | Script `bun run seed:e2e` (em `services/games`) insere 5 rounds SETTLED com SERVER_SEED fixo para 5 crash points reproduzíveis |
+| **Seed determinística para E2E** | Script `bun run seed:e2e` insere 5 rounds SETTLED com SERVER_SEED fixo para crash points reproduzíveis |
+| **Playwright E2E** | 4 arquivos de teste browser: auth setup, game page, login, contratos de API; projetos chromium + mobile-chrome; integrado ao `docker:up` |
 
 ---
 
@@ -285,6 +318,13 @@ Todos os valores monetários são armazenados como `BIGINT` em centavos (`amount
 
 ```
 jungle-crash/
+├── e2e/                        # Playwright E2E (browser)
+│   ├── tests/
+│   │   ├── auth.setup.ts       # Login Keycloak, persiste storage state
+│   │   ├── game.spec.ts        # GamePage completa (autenticado)
+│   │   ├── login.spec.ts       # Página de login (sem auth)
+│   │   └── api.spec.ts         # Contratos REST via Kong
+│   └── playwright.config.ts
 ├── services/
 │   ├── games/                  # Game Service (NestJS, porta 4001)
 │   │   ├── src/
