@@ -1,5 +1,8 @@
 # 🌴 Jungle Crash
 
+> **Nota sobre desenvolvimento assistido por IA**
+> Este projeto foi desenvolvido com auxílio de ferramentas de IA (GitHub Copilot) para acelerar a escrita de código boilerplate, geração de testes e documentação. Todo o código presente neste repositório foi revisado, compreendido e é de meu pleno domínio — conheço cada decisão de arquitetura, cada linha de lógica de negócio e cada integração entre os serviços. A IA foi usada como acelerador de produtividade, não como substituta do entendimento técnico.
+
 Jogo de crash gambling full-stack construído com NestJS, React, Keycloak, RabbitMQ e PostgreSQL. Desenvolvido como resposta ao desafio técnico Full-stack da **Jungle Gaming**.
 
 ---
@@ -158,20 +161,34 @@ bun test --cwd services/wallets tests/e2e
 
 ```bash
 cd e2e
-npx playwright test              # headless
+npx playwright test              # headless (todos os projetos)
 npx playwright test --headed     # com browser visível
-npx playwright test --ui         # UI interativa
-npx playwright show-report       # relatório HTML
+npx playwright test --ui         # UI interativa (recomendado para debug)
+npx playwright show-report       # relatório HTML após execução
+
+# Filtros úteis
+npx playwright test api          # só os testes de API
+npx playwright test --project=chromium     # só Chromium
+npx playwright test --project=firefox      # só Firefox
+npx playwright test --project=mobile-chrome
+npx playwright test --project=unauthenticated  # testes sem auth
 ```
 
-| Arquivo | O que testa |
-|---|---|
-| `auth.setup.ts` | Login Keycloak PKCE — persiste storage state para os demais testes |
-| `game.spec.ts` | Estrutura da GamePage, painel de apostas, aba Auto Bet, modal Provably Fair, toggle leaderboard |
-| `login.spec.ts` | Página de login sem auth, redirect para Keycloak, proteção de rota |
-| `api.spec.ts` | Contratos REST via Kong: rounds, leaderboard (sem prejuízo), auth 401 |
+| Arquivo | Projeto(s) | O que testa |
+|---|---|---|
+| `auth.setup.ts` | `setup` | Login Keycloak PKCE — persiste storage state para os demais testes |
+| `game.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Estrutura da GamePage, painel de apostas, aba Auto Bet, modal Provably Fair, toggle leaderboard |
+| `login.spec.ts` | `unauthenticated` | Página de login sem auth, redirect para Keycloak, proteção de rota |
+| `api.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Contratos REST via Kong: rounds (shape, paginação, commitamento), leaderboard (sem prejuízo, shape), auth 401, rate limit headers |
+| `wallet.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Exibição de saldo no header, formato monetário, GET /wallets/me autenticado e 401 sem token |
+| `bet-flow.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Validações de input (valor mínimo, vazio, não-numérico), ciclo de aposta, aposta duplicada rejeitada, feedback de UI |
+| `provably-fair.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Modal com hash + crash point, fechar modal, botão ƒ(t), endpoint /verify, hash chain SHA256 verificado em Node |
+| `auto-bet.spec.ts` | `chromium`, `firefox`, `mobile-chrome` | Aba Auto Bet: campos de estratégia, Fixo vs Martingale, multiplicador padrão, stop-loss, validações de input |
 
-Os projetos Playwright são: `setup` (auth) → `chromium` + `mobile-chrome` (com auth reusado).
+**Projetos Playwright:**
+- `setup` → autentica e salva storage state
+- `chromium` + `firefox` + `mobile-chrome` → todos os testes autenticados
+- `unauthenticated` → testes de login sem cookies de sessão
 
 ---
 

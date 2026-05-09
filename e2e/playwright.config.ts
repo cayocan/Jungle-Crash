@@ -1,7 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
-const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? 'http://localhost:8080';
 
 export default defineConfig({
   testDir: './tests',
@@ -20,19 +19,39 @@ export default defineConfig({
   },
 
   projects: [
+    // ── 1. Auth setup ──────────────────────────────────────────────────────
     {
       name: 'setup',
       testMatch: '**/auth.setup.ts',
     },
+
+    // ── 2. Desktop browsers (autenticado) ──────────────────────────────────
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/player.json' },
       dependencies: ['setup'],
+      testIgnore: '**/login.spec.ts', // login.spec roda sem auth
     },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'], storageState: 'playwright/.auth/player.json' },
+      dependencies: ['setup'],
+      testIgnore: '**/login.spec.ts',
+    },
+
+    // ── 3. Mobile (autenticado) ────────────────────────────────────────────
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 7'], storageState: 'playwright/.auth/player.json' },
       dependencies: ['setup'],
+      testIgnore: '**/login.spec.ts',
+    },
+
+    // ── 4. Testes sem autenticação ─────────────────────────────────────────
+    {
+      name: 'unauthenticated',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/login.spec.ts',
     },
   ],
 });
