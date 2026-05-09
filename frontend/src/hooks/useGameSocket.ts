@@ -3,12 +3,14 @@ import { io, Socket } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGameStore } from '../store/gameStore';
+import { useSounds } from './useSounds';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:4001';
 
 export function useGameSocket(userId?: string) {
   const socketRef = useRef<Socket | null>(null);
   const queryClient = useQueryClient();
+  const { playBetSound, playCashoutSound, playCrashSound, playTickSound } = useSounds();
   const {
     setCurrentState,
     setRoundWaiting,
@@ -39,10 +41,12 @@ export function useGameSocket(userId?: string) {
 
     socket.on('multiplier_tick', (data: { roundId: string; multiplier: number }) => {
       tickMultiplier(data.multiplier);
+      playTickSound(data.multiplier);
     });
 
     socket.on('round_crashed', (data: { roundId: string; crashPoint: number; serverSeed: string }) => {
       setRoundCrashed(data.crashPoint, data.serverSeed);
+      playCrashSound();
       toast.error(`💥 Crashed @ ${Number(data.crashPoint).toFixed(2)}x`, { duration: 3500, id: 'crash' });
       queryClient.invalidateQueries({ queryKey: ['rounds-history'] });
     });
@@ -51,6 +55,7 @@ export function useGameSocket(userId?: string) {
       addBet({ betId: data.betId, userId: data.userId, amountCents: Number(data.amountCents) });
       if (userId && data.userId === userId) {
         setHasBet(true);
+        playBetSound();
       }
     });
 
@@ -58,6 +63,7 @@ export function useGameSocket(userId?: string) {
       setCashedOut(data.userId, Number(data.multiplierAtCashout), Number(data.cashoutCents));
       if (userId && data.userId === userId) {
         setHasCashedOut(true);
+        playCashoutSound();
         toast.success(`💰 Cashout: R$ ${(Number(data.cashoutCents) / 100).toFixed(2)} @ ${Number(data.multiplierAtCashout).toFixed(2)}x`);
       }
     });
