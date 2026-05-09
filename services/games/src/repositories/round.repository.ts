@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../node_modules/.prisma/client';
 import { Round, BetProps } from '../domain/round';
 
 @Injectable()

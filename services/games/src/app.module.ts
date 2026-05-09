@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../node_modules/.prisma/client';
 import { GamesController } from './presentation/controllers/games.controller';
 import { RoundsController } from './presentation/controllers/rounds.controller';
 import { BetController } from './presentation/controllers/bet.controller';
