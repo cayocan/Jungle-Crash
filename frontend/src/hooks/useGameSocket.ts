@@ -48,8 +48,8 @@ export function useGameSocket(userId?: string) {
       addBet({ betId: data.betId, userId: data.userId, amountCents: Number(data.amountCents) });
     });
 
-    socket.on('cashout', (data: { betId: string; roundId: string; userId: string; cashoutCents: string; multiplierAtCashout: number }) => {
-      setCashedOut(data.userId, data.multiplierAtCashout, Number(data.cashoutCents));
+    socket.on('cashout', (data: { betId: string; roundId: string; userId: string; cashoutCents: string; multiplierAtCashout: string | number }) => {
+      setCashedOut(data.userId, Number(data.multiplierAtCashout), Number(data.cashoutCents));
       if (userId && data.userId === userId) {
         setHasCashedOut(true);
         toast.success(`💰 Cashout: R$ ${(Number(data.cashoutCents) / 100).toFixed(2)} @ ${Number(data.multiplierAtCashout).toFixed(2)}x`);

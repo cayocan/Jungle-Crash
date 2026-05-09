@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -5,7 +6,7 @@ const API = '/wallets';
 
 export interface WalletDto {
   id: string;
-  balanceCents: number;
+  balanceCents: string | number;
   currency: string;
 }
 
@@ -13,7 +14,7 @@ export function useWallet() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: wallet, refetch } = useQuery({
+  const { data: wallet, isLoading } = useQuery({
     queryKey: ['wallet'],
     queryFn: async () => {
       const res = await fetch(`${API}/me`, {
@@ -40,5 +41,12 @@ export function useWallet() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallet'] }),
   });
 
-  return { wallet, refetch, createWallet };
+  // Auto-create wallet on first login if it doesn't exist yet
+  useEffect(() => {
+    if (wallet === null && !createWallet.isPending && !createWallet.isSuccess) {
+      createWallet.mutate();
+    }
+  }, [wallet]);
+
+  return { wallet, isLoading, isCreating: createWallet.isPending };
 }

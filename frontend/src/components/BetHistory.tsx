@@ -25,7 +25,7 @@ function BetRow({ bet }: { bet: LiveBet }) {
       {/* Status */}
       {cashed ? (
         <span className="flex items-center gap-1 text-xs font-bold" style={{ color: '#00ff88' }}>
-          💰 {bet.cashoutMultiplier?.toFixed(2)}x
+          💰 {Number(bet.cashoutMultiplier).toFixed(2)}x
           <span style={{ color: '#6b7280' }}>(R$ {((bet.cashoutCents ?? 0) / 100).toFixed(2)})</span>
         </span>
       ) : (

@@ -1,4 +1,4 @@
-import { LogOut, Wallet, PlusCircle } from 'lucide-react';
+import { LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { useWallet } from '../hooks/useWallet';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -10,7 +10,7 @@ import RoundHistory from '../components/RoundHistory';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
-  const { wallet, createWallet } = useWallet();
+  const { wallet, isCreating } = useWallet();
   const { balance } = useGameStore();
   const userId = user?.profile?.sub;
 
@@ -37,16 +37,8 @@ export default function GamePage() {
           {/* Balance */}
           <div className="flex items-center gap-2">
             <Wallet size={14} style={{ color: '#4a5568' }} />
-            {wallet === null ? (
-              <button
-                onClick={() => createWallet.mutate()}
-                disabled={createWallet.isPending}
-                className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors"
-                style={{ color: '#ffd700', border: '1px solid #3a3010', background: 'transparent', cursor: 'pointer' }}
-              >
-                <PlusCircle size={12} />
-                {createWallet.isPending ? 'Criando…' : 'Criar carteira (R$1.000)'}
-              </button>
+            {isCreating ? (
+              <span className="text-xs" style={{ color: '#4a5568' }}>Criando carteira…</span>
             ) : (
               <span className="text-sm font-bold" style={{ color: '#00ff88' }}>
                 {displayBalance != null
