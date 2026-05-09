@@ -6,42 +6,42 @@ import { WalletEventConsumer } from '../../messaging/consumer.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  private server!: Server;
+    @WebSocketServer()
+    private server!: Server;
 
-  private readonly logger = new Logger(GameGateway.name);
+    private readonly logger = new Logger(GameGateway.name);
 
-  constructor(
-    private readonly gameService: GameService,
-    private readonly walletConsumer: WalletEventConsumer,
-  ) {}
+    constructor(
+        private readonly gameService: GameService,
+        private readonly walletConsumer: WalletEventConsumer,
+    ) { }
 
+/** Registers this gateway on services that need to emit WebSocket events. */
   afterInit() {
-    // Registra o gateway nos serviços que precisam emitir eventos
-    this.gameService.setGateway(this);
-    this.walletConsumer.setGateway(this);
-    this.logger.log('GameGateway initialized');
-  }
-
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
-    // Envia estado atual da rodada ao conectar
-    const round = this.gameService.getCurrentRound();
-    if (round) {
-      client.emit('current_state', {
-        roundId: round.id,
-        status: round.status,
-        multiplier: this.gameService.getCurrentMultiplier(),
-        serverSeedHash: round.serverSeedHash,
-      });
+        this.gameService.setGateway(this);
+        this.walletConsumer.setGateway(this);
+        this.logger.log('GameGateway initialized');
     }
-  }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
-  }
+    handleConnection(client: Socket) {
+        this.logger.log(`Client connected: ${client.id}`);
+        // Envia estado atual da rodada ao conectar
+        const round = this.gameService.getCurrentRound();
+        if (round) {
+            client.emit('current_state', {
+                roundId: round.id,
+                status: round.status,
+                multiplier: this.gameService.getCurrentMultiplier(),
+                serverSeedHash: round.serverSeedHash,
+            });
+        }
+    }
 
-  broadcast(event: string, payload: any) {
-    this.server?.emit(event, payload);
-  }
+    handleDisconnect(client: Socket) {
+        this.logger.log(`Client disconnected: ${client.id}`);
+    }
+
+    broadcast(event: string, payload: any) {
+        this.server?.emit(event, payload);
+    }
 }
