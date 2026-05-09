@@ -11,7 +11,7 @@ interface Props { userId?: string; }
 
 export default function BetPanel({ userId }: Props) {
   const { getToken } = useAuth();
-  const { status, multiplier, bettingEndsAt, hasBet, hasCashedOut, setHasBet } = useGameStore();
+  const { status, multiplier, bettingEndsAt, hasBet, hasCashedOut } = useGameStore();
   const queryClient = useQueryClient();
 
   const [amountInput, setAmountInput] = useState('1000');
@@ -45,8 +45,7 @@ export default function BetPanel({ userId }: Props) {
         const body = await res.json().catch(() => ({}));
         toast.error(body?.message ?? 'Erro ao apostar');
       } else {
-        setHasBet(true);
-        toast.success(`Aposta de R$ ${(amountCents / 100).toFixed(2)} confirmada!`);
+        toast.success(`Aposta de R$ ${(amountCents / 100).toFixed(2)} enviada!`);
       }
     } catch {
       toast.error('Erro de conexão');

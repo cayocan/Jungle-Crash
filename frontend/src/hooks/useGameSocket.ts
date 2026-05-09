@@ -17,6 +17,7 @@ export function useGameSocket(userId?: string) {
     tickMultiplier,
     addBet,
     setCashedOut,
+    setHasBet,
     setHasCashedOut,
   } = useGameStore();
 
@@ -47,6 +48,9 @@ export function useGameSocket(userId?: string) {
 
     socket.on('bet_placed', (data: { betId: string; roundId: string; userId: string; amountCents: string }) => {
       addBet({ betId: data.betId, userId: data.userId, amountCents: Number(data.amountCents) });
+      if (userId && data.userId === userId) {
+        setHasBet(true);
+      }
     });
 
     socket.on('cashout', (data: { betId: string; roundId: string; userId: string; cashoutCents: string; multiplierAtCashout: string | number }) => {
@@ -65,7 +69,9 @@ export function useGameSocket(userId?: string) {
 
     socket.on('bet_rejected', (data: { requestId: string; userId: string; reason: string }) => {
       if (userId && data.userId === userId) {
-        toast.error(`Aposta rejeitada: ${data.reason}`);
+        setHasBet(false);
+        setHasCashedOut(false);
+        toast.error(`Saldo insuficiente: ${data.reason}`, { duration: 4000 });
       }
     });
 
