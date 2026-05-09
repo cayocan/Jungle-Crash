@@ -1,7 +1,9 @@
-import { Controller, Post, Get, Body, Headers, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, BadRequestException, Query, UseGuards } from '@nestjs/common';
 import { GameService } from '../../application/game.service';
 import { RoundRepository } from '../../repositories/round.repository';
 import { PlaceBetDto } from '../dtos/place-bet.dto';
+import { JwtAuthGuard } from '../../infrastructure/jwt-auth.guard';
+import { CurrentUser } from '../../infrastructure/current-user.decorator';
 import { randomUUID } from 'crypto';
 
 @Controller()
@@ -13,15 +15,17 @@ export class BetController {
 
     /**
      * Places a bet on the currently open round.
-     * Requires `x-user-id` header; optionally accepts `x-request-id` for idempotency.
+     * Requires a valid Bearer JWT; optionally accepts `x-request-id` for idempotency.
      */
+    @UseGuards(JwtAuthGuard)
     @Post('bet')
     async placeBet(
         @Body() dto: PlaceBetDto,
-        @Headers('x-user-id') userId: string,
+        @CurrentUser() user: { userId: string },
         @Headers('x-request-id') requestId?: string,
     ) {
-        if (!userId) throw new BadRequestException('x-user-id header required');
+        const userId = user.userId;
+        if (!dto.amountCents) throw new BadRequestException('amountCents is required');
         if (!dto.amountCents) throw new BadRequestException('amountCents is required');
 
         const amountCents = BigInt(dto.amountCents);
@@ -41,12 +45,13 @@ export class BetController {
     }
 
     /** Cashes out the calling user's active bet at the current multiplier. */
+    @UseGuards(JwtAuthGuard)
     @Post('bet/cashout')
     async cashout(
-        @Headers('x-user-id') userId: string,
+        @CurrentUser() user: { userId: string },
         @Headers('x-request-id') requestId?: string,
     ) {
-        if (!userId) throw new BadRequestException('x-user-id header required');
+        const userId = user.userId;
         const reqId = requestId ?? randomUUID();
         const bet = await this.gameService.cashout(userId, reqId);
         return {
@@ -57,13 +62,14 @@ export class BetController {
     }
 
     /** Returns a paginated history of bets placed by the calling user. */
+    @UseGuards(JwtAuthGuard)
     @Get('bets/me')
     async myBets(
-        @Headers('x-user-id') userId: string,
+        @CurrentUser() user: { userId: string },
         @Query('page') page = '1',
         @Query('limit') limit = '20',
     ) {
-        if (!userId) throw new BadRequestException('x-user-id header required');
+        const userId = user.userId;
         const { bets, total } = await this.roundRepo.findBetsByUser(userId, Number(page), Number(limit));
         return {
             data: bets.map((b) => ({

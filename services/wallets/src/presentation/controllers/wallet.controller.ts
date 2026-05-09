@@ -1,15 +1,18 @@
-import { Body, Controller, Get, Headers, NotFoundException, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
 import { WalletRepository } from '../../repositories/wallet.repository';
 import { CreateWalletDto } from '../dtos/create-wallet.dto';
 import { Wallet as DomainWallet } from '../../domain/wallet';
+import { JwtAuthGuard } from '../../infrastructure/jwt-auth.guard';
+import { CurrentUser } from '../../infrastructure/current-user.decorator';
 
 @Controller()
 export class WalletController {
     constructor(private readonly repo: WalletRepository) { }
 
+    @UseGuards(JwtAuthGuard)
     @Get('me')
-    async getMe(@Headers('x-user-id') userId: string) {
-        if (!userId) throw new NotFoundException('x-user-id header required');
+    async getMe(@CurrentUser() user: { userId: string }) {
+        const userId = user.userId;
         const w = await this.repo.findByUserId(userId);
         if (!w) throw new NotFoundException();
         return {
@@ -36,10 +39,13 @@ export class WalletController {
         };
     }
 
+    @UseGuards(JwtAuthGuard)
     @Post()
-    async create(@Body() dto: CreateWalletDto) {
+    async create(@CurrentUser() user: { userId: string }, @Body() dto: CreateWalletDto) {
+        // userId always comes from the JWT; body fields are optional overrides for currency/initial balance
+        const userId = user.userId;
         const balance = dto.initialBalanceCents ? BigInt(dto.initialBalanceCents) : 0n;
-        const wallet = await this.repo.create(new DomainWallet({ userId: dto.userId, balance, currency: dto.currency }));
+        const wallet = await this.repo.create(new DomainWallet({ userId, balance, currency: dto.currency }));
         return { id: wallet.id, userId: wallet.userId, balanceCents: wallet.balance.toString(), currency: wallet.currency };
     }
 }
