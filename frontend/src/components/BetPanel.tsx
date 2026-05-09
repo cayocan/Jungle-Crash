@@ -101,13 +101,13 @@ export default function BetPanel({ userId }: Props) {
             <button
               key={v}
               onClick={() => setAmountInput(String(v))}
-              disabled={!canBet || loading}
+              disabled={hasBet || loading}
               className="text-xs px-2 py-1 rounded"
               style={{
                 background: amountInput === String(v) ? '#1e2d3d' : 'transparent',
                 border: '1px solid #1e2d3d',
                 color: '#6b7280',
-                cursor: canBet ? 'pointer' : 'default',
+                cursor: (hasBet || loading) ? 'default' : 'pointer',
               }}
             >
               R${v}
@@ -117,15 +117,17 @@ export default function BetPanel({ userId }: Props) {
         <div className="flex items-center mt-2" style={{ border: '1px solid #1e2d3d', borderRadius: '0.5rem', background: '#080c18' }}>
           <DollarSign size={16} style={{ color: '#4a5568', marginLeft: '0.75rem', flexShrink: 0 }} />
           <input
-            type="number"
-            min={1}
-            max={1000}
-            step={0.5}
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00"
             value={amountInput}
-            onChange={(e) => setAmountInput(e.target.value)}
-            disabled={!canBet || loading}
+            onChange={(e) => {
+              const val = e.target.value.replace(',', '.');
+              if (/^\d*\.?\d{0,2}$/.test(val) || val === '') setAmountInput(val);
+            }}
+            disabled={hasBet || loading}
             className="flex-1 bg-transparent text-sm px-2 py-3 outline-none"
-            style={{ color: canBet ? '#f0f0f0' : '#4a5568' }}
+            style={{ color: (hasBet || loading) ? '#4a5568' : '#f0f0f0' }}
           />
         </div>
         {amountCents < 100 && amountInput !== '' && (
