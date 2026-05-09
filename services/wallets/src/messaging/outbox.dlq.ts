@@ -1,15 +1,17 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RabbitService } from './rabbit.service';
 
 @Injectable()
 export class OutboxDlqHandler implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxDlqHandler.name);
-  private readonly prisma = new PrismaClient();
+  private readonly prisma: PrismaClient;
   private running = false;
   private handle?: NodeJS.Timeout;
 
-  constructor(private readonly rabbit: RabbitService) {}
+  constructor(private readonly rabbit: RabbitService, @Optional() prisma?: PrismaClient) {
+    this.prisma = prisma ?? new PrismaClient();
+  }
 
   async onModuleInit() {
     this.running = true;
