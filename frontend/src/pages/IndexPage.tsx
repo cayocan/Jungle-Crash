@@ -8,7 +8,7 @@ function LoadingSkeleton() {
       <div className="flex flex-col items-center gap-4">
         <span className="text-5xl">🌴</span>
         <div
-          className="w-6 h-6 border-2 border-[#00ff88] border-t-transparent rounded-full anim-spin"
+          className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
           style={{ borderColor: '#00ff88', borderTopColor: 'transparent' }}
         />
         <p className="text-sm" style={{ color: '#374151' }}>Carregando…</p>
