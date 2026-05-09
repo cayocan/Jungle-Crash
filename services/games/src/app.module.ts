@@ -25,4 +25,4 @@ import { GameService } from './application/game.service';
     GameGateway,
   ],
 })
-export class AppModule {}
+export class AppModule { }
