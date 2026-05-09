@@ -303,7 +303,7 @@ Todos os valores monetários são armazenados como `BIGINT` em centavos (`amount
 
 | Decisão | Motivo |
 |---|---|
-| Prisma `output = "../node_modules/.prisma/client"` | Bun usa symlinks no `node_modules`; output explícito garante o caminho correto dentro da imagem Docker |
+| Prisma `output = "../node_modules/.prisma/client"` | Bun usa symlinks no `node_modules`; output explícito garante o caminho correto dentro da imagem Docker. Imports apontam diretamente para `node_modules/.prisma/client` (não `@prisma/client`) para evitar ambiguidade de resolução de tipos em workspaces Bun |
 | `jwtVerify` sem verificação de `issuer` | `iss` dos tokens usa `localhost:8080` mas dentro do Docker o hostname é `keycloak:8080`; verificar causaria 401 em todos os requests |
 | `jose` em vez de `passport-jwt` | Menor footprint; compatibilidade nativa com Bun sem patches de polyfill |
 | Bun como runtime | Performance superior ao Node.js para I/O; test runner built-in; workspaces nativos |
