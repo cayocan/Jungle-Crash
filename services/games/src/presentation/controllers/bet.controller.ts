@@ -30,7 +30,6 @@ export class BetController {
     ) {
         const userId = user.userId;
         if (!dto.amountCents) throw new BadRequestException('amountCents is required');
-        if (!dto.amountCents) throw new BadRequestException('amountCents is required');
 
         const amountCents = BigInt(dto.amountCents);
         const MIN = 100n;    // 1.00

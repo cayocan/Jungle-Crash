@@ -125,9 +125,11 @@ export default function AutoBet() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as Record<string, unknown>;
         const msg = (err?.message as string) ?? 'Erro ao apostar';
-        if (msg.includes('insufficient') || msg.includes('saldo')) {
-          stopBot('Saldo insuficiente');
+        // 402 = saldo insuficiente; 409 = round fechado / já apostou (continua tentando)
+        if (res.status === 402 || msg.toLowerCase().includes('saldo') || msg.toLowerCase().includes('insufficient')) {
+          stopBot(msg);
         }
+        // 409 = race condition normal (round fechou no último ms) — ignora silenciosamente
       } else {
         queryClient.invalidateQueries({ queryKey: ['wallet'] });
       }
