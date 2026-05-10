@@ -1,0 +1,119 @@
+/* ─── Quick-bet preset buttons ──────────────────── */
+.bet-quick-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.bet-quick-btn.is-selected {
+  background: var(--color-border);
+  color: #f0f0f0;
+}
+.bet-quick-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ─── Main bet button ────────────────────────────── */
+.bet-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  background: #1a2a1a;
+  color: #2a4a2a;
+  cursor: not-allowed;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.bet-btn.is-active {
+  background: var(--color-neon);
+  color: #050810;
+  cursor: pointer;
+  box-shadow: 0 0 20px #00ff8844;
+}
+
+/* ─── Cashout button ─────────────────────────────── */
+.cashout-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  background: #2a2510;
+  color: #4a4010;
+  cursor: not-allowed;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.cashout-btn.is-active {
+  background: var(--color-gold);
+  color: #050810;
+  cursor: pointer;
+  box-shadow: 0 0 20px #ffd70044;
+}
+
+/* ─── Countdown timer ────────────────────────────── */
+.bet-countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+/* ─── Payout display ─────────────────────────────── */
+.bet-payout {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: #080c18;
+  border: 1px solid #ffd70033;
+  color: var(--color-gold);
+}
+
+/* ─── Auto cashout input highlight ──────────────── */
+.autocashout-wrap {
+  display: flex;
+  align-items: center;
+  border-radius: 0.5rem;
+  background: #080c18;
+}
+.autocashout-wrap--set {
+  border: 1px solid #ffd70066;
+}
+.autocashout-wrap--unset {
+  border: 1px solid var(--color-border);
+}
+
+/* ─── Input icon (inline SVG icons inside inputs) ───────────────── */
+/* ─── Autocashout helpers ─────────────────────────────────────── */
+.autocashout-mul {
+  color: #4a5568;
+  margin-left: 0.75rem;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.autocashout-clear {
+  color: #4a5568;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.autocashout-wrap--set .input-base {
+  color: #ffd700;
+}
+.autocashout-wrap--unset .input-base {
+  color: #f0f0f0;
+}
+.autocashout-wrap .input-base:disabled {
+  color: #4a5568;
+}
