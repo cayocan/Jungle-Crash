@@ -60,6 +60,44 @@ if ($LASTEXITCODE -ne 0) {
   exit 1
 }
 
+# When games/wallets are recreated they can receive new container IPs.
+# Restarting Kong here avoids stale upstream DNS cache causing intermittent 502.
+Write-Host "  Refreshing Kong gateway upstream resolution..."
+docker compose restart kong
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "failed to restart Kong"
+  exit 1
+}
+
+# Wait until Kong can proxy both upstream health routes.
+$kongReady = $false
+for ($i = 1; $i -le 30; $i++) {
+  $gamesOk = $false
+  $walletsOk = $false
+
+  try {
+    $g = Invoke-WebRequest -Uri "http://localhost:8000/games/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    if ($g.StatusCode -lt 500) { $gamesOk = $true }
+  } catch { }
+
+  try {
+    $w = Invoke-WebRequest -Uri "http://localhost:8000/wallets/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    if ($w.StatusCode -lt 500) { $walletsOk = $true }
+  } catch { }
+
+  if ($gamesOk -and $walletsOk) {
+    $kongReady = $true
+    break
+  }
+
+  Write-Host "  Waiting for Kong upstreams (attempt $i/30)..."
+  Start-Sleep -Seconds 2
+}
+
+if (-not $kongReady) {
+  Write-Warning "Kong upstreams not fully ready yet; startup may still converge in a few seconds."
+}
+
 # Step 3: Wait for Postgres, then run migrations from host
 Write-Host ""
 Write-Host "=== [3/6] Waiting for PostgreSQL... ==="
