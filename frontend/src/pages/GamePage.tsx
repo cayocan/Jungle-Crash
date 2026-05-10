@@ -10,6 +10,7 @@ import BetHistory from '../components/BetHistory';
 import RoundHistory from '../components/RoundHistory';
 import ProvablyFairModal from '../components/ProvablyFairModal';
 import Leaderboard from '../components/Leaderboard';
+import './GamePage.css';
 
 export default function GamePage() {
   const { user, logout } = useAuth();
@@ -24,39 +25,34 @@ export default function GamePage() {
   const username = user?.profile?.preferred_username as string | undefined;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#050810' }}>
+    <div className="game-page">
       {/* ─── Header ─── */}
-      <header
-        className="flex items-center justify-between px-4 py-3 shrink-0"
-        style={{ background: '#0a1020', borderBottom: '1px solid #1e2d3d' }}
-      >
+      <header className="game-header">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🌴</span>
-          <span className="font-black text-lg tracking-tight" style={{ color: '#00ff88', letterSpacing: '-0.02em' }}>
-            JUNGLE CRASH
-          </span>
+          <span className="game-header__logo">JUNGLE CRASH</span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           {/* Balance */}
           <div className="flex items-center gap-2">
-            <Wallet size={14} style={{ color: '#4a5568' }} />
+            <Wallet size={14} className="text-muted" />
             {isCreating ? (
-              <span className="text-xs" style={{ color: '#4a5568' }}>Criando carteira…</span>
+              <span className="text-xs text-muted">Criando carteira…</span>
             ) : walletLoading ? (
-              <span className="anim-skeleton inline-block" style={{ width: 72, height: 14 }} />
+              <span className="anim-skeleton inline-block game-balance-skeleton" />
             ) : (
-              <span className="text-sm font-bold" style={{ color: '#00ff88' }}>
+              <span className="game-header__balance">
                 {displayBalance != null
                   ? `R$ ${(displayBalance / 100).toFixed(2)}`
-                  : <span style={{ color: '#374151' }}>—</span>}
+                  : <span className="text-subtle">—</span>}
               </span>
             )}
           </div>
 
           {/* Username */}
           {username && (
-            <span className="text-sm hidden md:block truncate max-w-30" style={{ color: '#6b7280' }}>
+            <span className="text-sm hidden md:block truncate max-w-30 text-dim">
               {username}
             </span>
           )}
@@ -64,10 +60,7 @@ export default function GamePage() {
           {/* Logout */}
           <button
             onClick={logout}
-            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-colors"
-            style={{ color: '#6b7280', border: '1px solid #1e2d3d', background: 'transparent' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#f0f0f0'; e.currentTarget.style.borderColor = '#374151'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.borderColor = '#1e2d3d'; }}
+            className="btn-surface"
           >
             <LogOut size={12} />
             <span>Sair</span>
@@ -84,18 +77,12 @@ export default function GamePage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-3 space-y-2">
             {/* Manual / Auto tabs */}
-            <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #1e2d3d', background: '#0d1421' }}>
+            <div className="bet-tab-wrap">
               {(['manual', 'auto'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setBetTab(tab)}
-                  className="flex-1 text-xs py-2 font-semibold transition-colors"
-                  style={{
-                    background: betTab === tab ? '#1e2d3d' : 'transparent',
-                    color: betTab === tab ? '#f0f0f0' : '#4a5568',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
+                  className={`bet-tab-btn${betTab === tab ? ' is-active' : ''}`}
                 >
                   {tab === 'manual' ? '🎲 Manual' : '🤖 Auto'}
                 </button>

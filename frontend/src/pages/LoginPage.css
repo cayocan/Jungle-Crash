@@ -1,0 +1,78 @@
+/* ─── Page background ────────────────────────────── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: radial-gradient(ellipse at 50% 0%, #0a1f14 0%, #050810 60%);
+}
+
+/* ─── Decorative glow ────────────────────────────── */
+.login-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, #00ff8812 0%, transparent 70%);
+  filter: blur(40px);
+}
+
+/* ─── Login card ─────────────────────────────────── */
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 24rem;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 0 60px #00ff8808;
+}
+
+/* ─── Logo / title ───────────────────────────────── */
+.login-title {
+  font-size: 1.875rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--color-neon);
+  text-shadow: 0 0 30px #00ff8866;
+}
+
+/* ─── Feature box ────────────────────────────────── */
+.login-feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #080c18;
+  border: 1px solid var(--color-border);
+}
+
+/* ─── CTA button ─────────────────────────────────── */
+.login-cta-btn {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  background: var(--color-neon);
+  color: #050810;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 30px #00ff8855;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.login-cta-btn:hover {
+  background: var(--color-neon-dim);
+  box-shadow: 0 0 20px #00cc6a55;
+}
