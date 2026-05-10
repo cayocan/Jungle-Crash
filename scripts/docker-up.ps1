@@ -34,7 +34,7 @@ function Wait-For-Postgres {
   return $false
 }
 
-# ─── Step 1: Auto-create .env files from .env.example (fresh clone support) ───
+# Step 1: Auto-create .env files from .env.example (fresh clone support)
 Write-Host ""
 Write-Host "=== [1/6] Checking environment files... ==="
 $envPairs = @(
@@ -47,11 +47,11 @@ foreach ($pair in $envPairs) {
     Write-Host "  Creating $($pair.dst) from $($pair.src)..."
     Copy-Item $pair.src $pair.dst
   } else {
-    Write-Host "  $($pair.dst) already exists — skipping."
+    Write-Host "  $($pair.dst) already exists - skipping."
   }
 }
 
-# ─── Step 2: Build and start all containers ─────────────────────────────────
+# Step 2: Build and start all containers
 Write-Host ""
 Write-Host "=== [2/6] Starting Docker Compose (build + detach)... ==="
 docker compose up --build -d
@@ -60,7 +60,7 @@ if ($LASTEXITCODE -ne 0) {
   exit 1
 }
 
-# ─── Step 3: Wait for Postgres, then run migrations from host ────────────────
+# Step 3: Wait for Postgres, then run migrations from host
 Write-Host ""
 Write-Host "=== [3/6] Waiting for PostgreSQL... ==="
 if (-not (Wait-For-Postgres -Retries 90 -DelaySeconds 2)) {
@@ -96,7 +96,7 @@ if ($bunExe) {
       }
 
       if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Prisma migrations returned non-zero for $($svc.Name) — service will retry on startup."
+        Write-Warning "Prisma migrations returned non-zero for $($svc.Name) - service will retry on startup."
       }
     } finally {
       if ($null -ne $origDb) { $env:DATABASE_URL = $origDb }
@@ -105,10 +105,10 @@ if ($bunExe) {
     }
   }
 } else {
-  Write-Warning "bun not found on host — skipping host-side migrations (services handle them at startup via CMD)."
+  Write-Warning "bun not found on host - skipping host-side migrations (services handle them at startup via CMD)."
 }
 
-# ─── Step 4: Run unit tests ──────────────────────────────────────────────────
+# Step 4: Run unit tests
 Write-Host ""
 Write-Host "=== [4/6] Running unit tests... ==="
 $unitsFailed = $false
@@ -122,15 +122,15 @@ if ($bunExe) {
   if ($LASTEXITCODE -ne 0) { $unitsFailed = $true }
 
   if ($unitsFailed) {
-    Write-Warning "Some unit tests failed — check output above."
+    Write-Warning "Some unit tests failed - check output above."
   } else {
     Write-Host "All unit tests passed."
   }
 } else {
-  Write-Warning "bun not found — skipping unit tests."
+  Write-Warning "bun not found - skipping unit tests."
 }
 
-# ─── Step 5: Run Playwright E2E tests ────────────────────────────────────────
+# Step 5: Run Playwright E2E tests
 Write-Host ""
 Write-Host "=== [5/6] Waiting for services to be healthy before Playwright... ==="
 
@@ -148,17 +148,15 @@ function Wait-For-Http {
 }
 
 $frontendReady = Wait-For-Http -Url "http://localhost:3000" -Retries 30 -DelaySeconds 3
-$gamesReady    = Wait-For-Http -Url "http://localhost:4001/health" -Retries 30 -DelaySeconds 3
+$gamesReady = Wait-For-Http -Url "http://localhost:4001/health" -Retries 30 -DelaySeconds 3
 
 if (-not $frontendReady) {
-  Write-Warning "Frontend did not become ready — skipping Playwright tests."
+  Write-Warning "Frontend did not become ready - skipping Playwright tests."
 } elseif (-not $gamesReady) {
-  Write-Warning "Games service did not become ready — skipping Playwright tests."
+  Write-Warning "Games service did not become ready - skipping Playwright tests."
 } else {
   Write-Host "Services are ready. Running Playwright tests..."
 
-  # Install browsers if not already installed
-  $pwBrowsers = Join-Path $PSScriptRoot "..\e2e\node_modules\.bin\playwright"
   Push-Location (Join-Path $PSScriptRoot "..\e2e")
   try {
     # Ensure node_modules exist for e2e package
@@ -166,12 +164,12 @@ if (-not $frontendReady) {
 
     $pwExe = Resolve-Path "node_modules\.bin\playwright" -ErrorAction SilentlyContinue
     if (-not $pwExe) {
-      Write-Warning "Playwright not installed in e2e/ — run 'bun run test:playwright:install' first."
+      Write-Warning "Playwright not installed in e2e/ - run 'bun run test:playwright:install' first."
     } else {
       npx playwright install --with-deps chromium 2>&1 | Out-Null
       npx playwright test 2>&1
       if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Some Playwright tests failed — run 'bun run test:playwright' to see the full report."
+        Write-Warning "Some Playwright tests failed - run 'bun run test:playwright' to see the full report."
       } else {
         Write-Host "All Playwright tests passed."
       }
@@ -181,15 +179,15 @@ if (-not $frontendReady) {
   }
 }
 
-# ─── Step 6: Tail logs ──────────────────────────────────────────────────────
+# Step 6: Tail logs
 Write-Host ""
 Write-Host "=== [6/6] All services started. Tailing logs (Ctrl+C to stop) ==="
 Write-Host ""
-Write-Host "  Frontend  → http://localhost:3000"
-Write-Host "  Games API → http://localhost:4001/docs"
-Write-Host "  Wallets   → http://localhost:4002/docs"
-Write-Host "  Keycloak  → http://localhost:8080  (admin/admin)"
-Write-Host "  RabbitMQ  → http://localhost:15672  (admin/admin)"
-Write-Host "  Kong GW   → http://localhost:8000"
+Write-Host "  Frontend  -> http://localhost:3000"
+Write-Host "  Games API -> http://localhost:4001/docs"
+Write-Host "  Wallets   -> http://localhost:4002/docs"
+Write-Host "  Keycloak  -> http://localhost:8080  (admin/admin)"
+Write-Host "  RabbitMQ  -> http://localhost:15672  (admin/admin)"
+Write-Host "  Kong GW   -> http://localhost:8000"
 Write-Host ""
 docker compose logs --follow --tail=50
