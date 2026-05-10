@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Bot, StopCircle } from 'lucide-react';
+import './AutoBet.css';
 
 const API = '/games';
 
@@ -157,47 +158,24 @@ export default function AutoBet() {
     if (reason) toast(reason, { duration: 3000 });
   }
 
-  const cardStyle = {
-    background: '#0d1421',
-    border: `1px solid ${running ? '#ffd70066' : '#1e2d3d'}`,
-    borderRadius: '1rem',
-    padding: '1.25rem',
-  };
-
   function cfgNum(field: keyof AutoBetConfig, value: string, scale = 1) {
     const n = parseFloat(value.replace(',', '.'));
     if (!isNaN(n)) setConfig((c) => ({ ...c, [field]: Math.round(n * scale) as never }));
   }
 
-  const inputStyle = {
-    background: '#080c18',
-    border: '1px solid #1e2d3d',
-    borderRadius: '0.5rem',
-    color: '#f0f0f0',
-    padding: '0.4rem 0.6rem',
-    fontSize: 13,
-    width: '100%',
-  };
-
   return (
-    <div style={cardStyle} className="space-y-3">
+    <div className={`card${running ? ' autobet-running' : ''} space-y-3`}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: running ? '#ffd700' : '#6b7280' }}>
-          <Bot size={14} style={{ color: running ? '#ffd700' : '#6b7280' }} />
+        <h2 className={`section-title flex items-center gap-1.5${running ? ' autobet-title is-running' : ''}`}>
+          <Bot size={14} className={running ? 'text-gold' : 'text-dim'} />
           Auto Bet
-          {running && <span className="text-xs font-normal normal-case ml-1" style={{ color: '#4a5568' }}>rodada {stats.rounds}</span>}
+          {running && <span className="text-xs font-normal normal-case ml-1 text-muted">rodada {stats.rounds}</span>}
         </h2>
         <button
           onClick={running ? () => stopBot('Bot parado manualmente') : startBot}
           disabled={!running && (config.baseAmountCents < 100)}
-          className="text-xs px-3 py-1.5 rounded-lg font-bold transition-all"
-          style={{
-            background: running ? '#2a1010' : '#1a2a1a',
-            color: running ? '#ff3b3b' : '#00ff88',
-            border: `1px solid ${running ? '#ff3b3b44' : '#00ff8844'}`,
-            cursor: config.baseAmountCents >= 100 ? 'pointer' : 'not-allowed',
-          }}
+          className={`autobet-start-btn${running ? ' is-running' : ''}`}
         >
           {running ? (
             <span className="flex items-center gap-1"><StopCircle size={12} /> Parar</span>
@@ -209,27 +187,21 @@ export default function AutoBet() {
 
       {/* Strategy */}
       <div>
-        <label className="block text-xs mb-1" style={{ color: '#4a5568' }}>Estratégia</label>
-        <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #1e2d3d' }}>
+        <label className="field-label">Estratégia</label>
+        <div className="tab-group">
           {(['fixed', 'martingale'] as Strategy[]).map((s) => (
             <button
               key={s}
               disabled={running}
               onClick={() => setConfig((c) => ({ ...c, strategy: s }))}
-              className="flex-1 text-xs py-1.5 transition-colors"
-              style={{
-                background: config.strategy === s ? '#1e2d3d' : 'transparent',
-                color: config.strategy === s ? '#f0f0f0' : '#4a5568',
-                border: 'none',
-                cursor: running ? 'default' : 'pointer',
-              }}
+              className={`tab-btn${config.strategy === s ? ' is-active' : ''}`}
             >
               {s === 'fixed' ? 'Valor Fixo' : 'Martingale'}
             </button>
           ))}
         </div>
         {config.strategy === 'martingale' && (
-          <p className="text-[10px] mt-1" style={{ color: '#374151' }}>
+          <p className="autobet-hint">
             Dobra a aposta a cada derrota, reinicia na vitória
           </p>
         )}
@@ -238,17 +210,17 @@ export default function AutoBet() {
       {/* Grid of inputs */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs mb-1" style={{ color: '#4a5568' }}>Aposta base (R$)</label>
+          <label className="field-label">Aposta base (R$)</label>
           <input
             type="text"
             disabled={running}
             defaultValue={(config.baseAmountCents / 100).toFixed(2)}
             onBlur={(e) => cfgNum('baseAmountCents', e.target.value, 100)}
-            style={inputStyle}
+            className="autobet-input"
           />
         </div>
         <div>
-          <label className="block text-xs mb-1" style={{ color: '#4a5568' }}>Auto cashout ×</label>
+          <label className="field-label">Auto cashout ×</label>
           <input
             type="text"
             disabled={running}
@@ -258,21 +230,21 @@ export default function AutoBet() {
               const v = parseFloat(e.target.value);
               setConfig((c) => ({ ...c, autoCashoutAt: isNaN(v) || v < 1.01 ? null : v }));
             }}
-            style={inputStyle}
+            className="autobet-input"
           />
         </div>
         <div>
-          <label className="block text-xs mb-1" style={{ color: '#4a5568' }}>Stop-loss (R$)</label>
+          <label className="field-label">Stop-loss (R$)</label>
           <input
             type="text"
             disabled={running}
             defaultValue={(config.stopLossAmountCents / 100).toFixed(2)}
             onBlur={(e) => cfgNum('stopLossAmountCents', e.target.value, 100)}
-            style={inputStyle}
+            className="autobet-input"
           />
         </div>
         <div>
-          <label className="block text-xs mb-1" style={{ color: '#4a5568' }}>Máx. rodadas</label>
+          <label className="field-label">Máx. rodadas</label>
           <input
             type="text"
             disabled={running}
@@ -282,7 +254,7 @@ export default function AutoBet() {
               const v = parseInt(e.target.value);
               setConfig((c) => ({ ...c, maxRounds: isNaN(v) || v <= 0 ? null : v }));
             }}
-            style={inputStyle}
+            className="autobet-input"
           />
         </div>
       </div>
@@ -294,22 +266,22 @@ export default function AutoBet() {
           disabled={running}
           checked={config.stopOnWin}
           onChange={(e) => setConfig((c) => ({ ...c, stopOnWin: e.target.checked }))}
-          style={{ accentColor: '#00ff88' }}
+          className="autobet-checkbox"
         />
-        <span className="text-xs" style={{ color: '#6b7280' }}>Parar após primeira vitória</span>
+        <span className="text-xs text-dim">Parar após primeira vitória</span>
       </label>
 
       {/* Live stats */}
       {(running || stats.rounds > 0) && (
-        <div className="grid grid-cols-3 gap-2 pt-2" style={{ borderTop: '1px solid #1e2d3d' }}>
+        <div className="grid grid-cols-3 gap-2 autobet-stats">
           {[
             { label: 'Rodadas', value: stats.rounds },
             { label: 'Perda total', value: `R$ ${(stats.totalLoss / 100).toFixed(2)}`, color: '#ff3b3b' },
             { label: 'Lucro líq.', value: `R$ ${(stats.totalProfit / 100).toFixed(2)}`, color: stats.totalProfit >= 0 ? '#00ff88' : '#ff3b3b' },
           ].map(({ label, value, color }) => (
             <div key={label} className="text-center">
-              <p className="text-[10px]" style={{ color: '#4a5568' }}>{label}</p>
-              <p className="text-sm font-bold" style={{ color: color ?? '#f0f0f0' }}>{value}</p>
+              <p className="text-[10px] text-muted">{label}</p>
+              <p className={`text-sm font-bold${color === '#ff3b3b' ? ' text-crash' : color === '#00ff88' ? ' text-success' : ''}`}>{value}</p>
             </div>
           ))}
         </div>
@@ -317,3 +289,4 @@ export default function AutoBet() {
     </div>
   );
 }
+

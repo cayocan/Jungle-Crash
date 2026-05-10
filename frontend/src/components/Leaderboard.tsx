@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
+import './Leaderboard.css';
 
 type Period = '24' | '168';
 
@@ -36,33 +37,20 @@ export default function Leaderboard() {
     refetchInterval: 30_000,
   });
 
-  const cardStyle = {
-    background: '#0d1421',
-    border: '1px solid #1e2d3d',
-    borderRadius: '1rem',
-    padding: '1.25rem',
-  };
-
   return (
-    <div style={cardStyle} className="space-y-3">
+    <div className="card space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: '#6b7280' }}>
-          <Trophy size={14} style={{ color: '#ffd700' }} />
+        <h2 className="section-title flex items-center gap-1.5">
+          <Trophy size={14} className="text-gold" />
           Maiores ganhos
         </h2>
-        <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #1e2d3d' }}>
+        <div className="tab-group">
           {(['24', '168'] as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className="text-xs px-3 py-1 transition-colors"
-              style={{
-                background: period === p ? '#1e2d3d' : 'transparent',
-                color: period === p ? '#f0f0f0' : '#4a5568',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className={`tab-btn${period === p ? ' is-active' : ''}`}
             >
               {p === '24' ? '24h' : '7d'}
             </button>
@@ -74,11 +62,11 @@ export default function Leaderboard() {
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="anim-skeleton" style={{ height: 32, borderRadius: 6 }} />
+            <div key={i} className="anim-skeleton lb-skeleton-row" />
           ))}
         </div>
       ) : !data?.data.length ? (
-        <p className="text-xs text-center py-4" style={{ color: '#374151' }}>
+        <p className="text-xs text-center py-4 text-subtle">
           Nenhum cashout lucrativo neste período.
         </p>
       ) : (
@@ -88,32 +76,28 @@ export default function Leaderboard() {
             const multiplier = entry.bestMultiplier;
             return (
               <div
-                key={entry.userId}
-                className="flex items-center gap-3 px-2 py-2 rounded-lg"
-                style={{ background: entry.rank <= 3 ? '#0a1520' : 'transparent' }}
-              >
+                  key={entry.userId}
+                  className={`flex items-center gap-3 px-2 py-2 rounded-lg ${entry.rank <= 3 ? 'lb-row--podium' : ''}`}
+                >
                 {/* Rank */}
                 <span className="text-sm w-6 text-center shrink-0">
                   {entry.rank <= 3 ? MEDAL[entry.rank - 1] : (
-                    <span style={{ color: '#4a5568' }}>{entry.rank}</span>
+                    <span className="text-muted">{entry.rank}</span>
                   )}
                 </span>
 
                 {/* User ID (truncated) */}
-                <span className="flex-1 text-xs font-mono truncate" style={{ color: '#9ca3af' }}>
+                <span className="flex-1 text-xs font-mono truncate user-id">
                   {entry.userId.slice(0, 8)}…
                 </span>
 
                 {/* Best multiplier */}
-                <span className="text-xs font-bold tabular-nums" style={{ color: '#ffd700', minWidth: 44, textAlign: 'right' }}>
+                <span className="text-xs font-bold tabular-nums mult">
                   {multiplier.toFixed(2)}x
                 </span>
 
                 {/* Best single-round profit */}
-                <span
-                  className="text-sm font-bold text-right tabular-nums"
-                  style={{ color: '#00ff88', minWidth: 80 }}
-                >
+                <span className="text-sm font-bold text-right tabular-nums profit">
                   +R$ {profit.toFixed(2)}
                 </span>
               </div>
