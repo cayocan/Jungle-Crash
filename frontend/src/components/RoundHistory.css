@@ -1,0 +1,55 @@
+/* ─── Verify button (neon outline) ──────────────── */
+.round-verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: 1px solid #00ff8840;
+  color: var(--color-neon);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.round-verify-btn:hover {
+  background: #00ff8815;
+}
+
+.round-skeleton-wide { width: 52px; }
+.round-skeleton-base { width: 44px; }
+.round-list { max-height: calc(100% - 44px); }
+
+.round-pill {
+  letter-spacing: -0.02em;
+}
+.round-pill--x10 {
+  background: #0a1f10;
+  color: #00ff88;
+  border: 1px solid #00ff8844;
+  box-shadow: 0 0 6px #00ff8844;
+}
+.round-pill--x3 {
+  background: #0d1a10;
+  color: #4ade80;
+  border: 1px solid #4ade8033;
+  box-shadow: 0 0 6px #4ade8033;
+}
+.round-pill--x2 {
+  background: #1a1f0a;
+  color: #ffd700;
+  border: 1px solid #ffd70033;
+  box-shadow: 0 0 6px #ffd70033;
+}
+.round-pill--x15 {
+  background: #1f180a;
+  color: #f97316;
+  border: 1px solid #f9731633;
+  box-shadow: 0 0 6px #f9731633;
+}
+.round-pill--low {
+  background: #1f0a0a;
+  color: #ff3b3b;
+  border: 1px solid #ff3b3b33;
+  box-shadow: 0 0 6px #ff3b3b33;
+}

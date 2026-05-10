@@ -1,0 +1,106 @@
+/* ─── Modal header ───────────────────────────────── */
+.modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ─── Modal close button ─────────────────────────── */
+.modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a5568;
+  transition: color 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.modal__close:hover { color: #f0f0f0; }
+
+/* ─── Tab navigation ─────────────────────────────── */
+.pf-tab-nav {
+  display: flex;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.pf-tab {
+  padding: 0.75rem 1.5rem 0.75rem 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #4a5568;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.pf-tab.is-active {
+  color: var(--color-neon);
+  border-bottom-color: var(--color-neon);
+}
+
+/* ─── History table ──────────────────────────────── */
+.pf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.pf-table thead tr {
+  color: #4a5568;
+  border-bottom: 1px solid var(--color-border);
+}
+.pf-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+}
+.pf-table td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+}
+.pf-table tbody tr {
+  border-bottom: 1px solid #0d1421;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.pf-table tbody tr:hover { background: #0a1320; }
+
+/* ─── Pagination ─────────────────────────────────── */
+.pf-page-btn {
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--color-border);
+  color: #f0f0f0;
+  border: none;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.pf-page-btn:disabled {
+  color: #2a3a4d;
+  cursor: default;
+}
+
+/* ─── Manual verify input (monospace) ───────────── */
+.pf-input {
+  background: #060b14;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: #f0f0f0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+  width: 100%;
+  outline: none;
+}
+
+/* ─── Info/explanation box ───────────────────────── */
+.pf-info-box {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  background: #0a1020;
+  border: 1px solid var(--color-border);
+  color: #4a5568;
+}

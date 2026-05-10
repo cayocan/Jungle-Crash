@@ -1,0 +1,28 @@
+/* ─── Scrollable bet list ────────────────────────── */
+.bet-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+/* ─── Bet row ────────────────────────────────────── */
+.bet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.bet-row--cashed {
+  background: #0d1f14;
+  border-color: #1a3320;
+}
+
+.bet-row .user-id { color: #4a5568; }
+.bet-row .amount { color: #9ca3af; }
+.bet-row .status-cashed { color: #00ff88; }
+.bet-row .status-running { color: #ffd700; }

@@ -1,0 +1,8 @@
+.index-loading-page {
+  background: #050810;
+}
+
+.index-loading-spinner {
+  border-color: var(--color-neon);
+  border-top-color: transparent;
+}

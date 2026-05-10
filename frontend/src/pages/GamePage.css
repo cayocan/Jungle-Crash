@@ -1,0 +1,61 @@
+/* ─── Page background ────────────────────────────── */
+.game-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #050810;
+}
+
+/* ─── Header bar ─────────────────────────────────── */
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #0a1020;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ─── Logo text ──────────────────────────────────── */
+.game-header__logo {
+  font-weight: 900;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  color: var(--color-neon);
+}
+
+/* ─── Balance amount ─────────────────────────────── */
+.game-header__balance {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-neon);
+}
+.game-balance-skeleton {
+  width: 72px;
+  height: 14px;
+}
+
+/* ─── Bet mode tab wrapper ───────────────────────── */
+.bet-tab-wrap {
+  display: flex;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.bet-tab-btn {
+  flex: 1;
+  font-size: 0.75rem;
+  padding: 0.5rem;
+  font-weight: 600;
+  background: transparent;
+  color: #4a5568;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bet-tab-btn.is-active {
+  background: var(--color-border);
+  color: #f0f0f0;
+}

@@ -4,12 +4,18 @@
   "workspaces": [
     "services/*",
     "packages/*",
-    "frontend"
+    "frontend",
+    "e2e"
   ],
   "scripts": {
-    "docker:up": "docker compose up",
+    "docker:up": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/docker-up.ps1",
     "docker:down": "docker compose down",
-    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f"
+    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f",
+    "seed:e2e": "cd services/games && bun scripts/seed-e2e.ts",
+    "test:unit": "bun test --cwd services/games tests/unit && bun test --cwd services/wallets tests/unit",
+    "test:e2e:backend": "bun test --cwd services/games tests/e2e && bun test --cwd services/wallets tests/e2e",
+    "test:playwright": "cd e2e && npx playwright test",
+    "test:playwright:install": "cd e2e && npx playwright install --with-deps chromium"
   },
   "devDependencies": {
     "bun-types": "latest"

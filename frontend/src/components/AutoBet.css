@@ -1,0 +1,59 @@
+/* ─── Running state card border ──────────────────── */
+.card.autobet-running {
+  border-color: #ffd70066;
+}
+
+/* ─── Start/stop button ──────────────────────────── */
+.autobet-start-btn {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #1a2a1a;
+  color: var(--color-neon);
+  border: 1px solid #00ff8844;
+}
+.autobet-start-btn.is-running {
+  background: #2a1010;
+  color: var(--color-crash);
+  border-color: #ff3b3b44;
+}
+.autobet-start-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ─── Header title running state ─────────────────── */
+.autobet-title { color: #6b7280; }
+.autobet-title.is-running { color: var(--color-gold); }
+
+/* ─── Config input (smaller than standard) ───────── */
+.autobet-input {
+  background: #080c18;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: #f0f0f0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8125rem;
+  width: 100%;
+  outline: none;
+}
+.autobet-input:disabled { color: #4a5568; }
+.autobet-checkbox {
+  accent-color: var(--color-neon);
+}
+
+/* ─── Stats divider row ──────────────────────────── */
+.autobet-stats {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+/* ─── Martingale hint ────────────────────────────── */
+.autobet-hint {
+  font-size: 0.625rem;
+  margin-top: 0.25rem;
+  color: #374151;
+}

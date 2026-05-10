@@ -1,0 +1,102 @@
+/* ─── Graph container ────────────────────────────── */
+.crash-graph {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #0a1020;
+  border: 1px solid var(--color-border);
+}
+
+/* ─── Red flash overlay on crash ────────────────── */
+.crash-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: rgba(255, 59, 59, 0.18);
+  animation: fade-in 0.05s ease;
+}
+
+/* ─── Seed hash badge (top-left) ─────────────────── */
+.crash-seed-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  font-size: 0.625rem;
+  font-family: monospace;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4a5568;
+  background: #0d1421aa;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+}
+
+/* ─── Formula button (bottom-right) ─────────────── */
+.crash-formula-btn {
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  background: #0d1421aa;
+  color: #374151;
+  border: 1px solid var(--color-border);
+}
+.crash-formula-btn.is-open {
+  background: #1e3a2a;
+  color: var(--color-neon);
+  border-color: #00ff8844;
+}
+
+/* ─── Formula tooltip ────────────────────────────── */
+.crash-formula-tooltip {
+  position: absolute;
+  bottom: 2rem;
+  right: 0;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  width: 260px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 32px #00000088;
+}
+
+.crash-formula-table {
+  width: 100%;
+  font-size: 0.625rem;
+  border-collapse: collapse;
+  color: #6b7280;
+}
+.crash-formula-table th {
+  text-align: left;
+  padding-bottom: 0.125rem;
+}
+
+.crash-multiplier {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  letter-spacing: -0.02em;
+}
+.crash-multiplier--running {
+  color: var(--color-neon);
+  text-shadow: 0 0 30px #00ff8866;
+}
+.crash-multiplier--crashed {
+  color: var(--color-crash);
+  text-shadow: 0 0 30px #ff3b3b66;
+}
+
+.crash-formula-title { color: var(--color-neon); font-weight: 700; }
+.crash-formula-copy { color: #9ca3af; }
+.crash-formula-note { color: #4a5568; font-size: 10px; }
+.crash-formula-divider { border-color: var(--color-border); }
+.crash-formula-value { color: #00ff8888; }
+
+.crash-graph-svg {
+  width: 100%;
+  display: block;
+  min-height: 200px;
+}

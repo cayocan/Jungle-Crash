@@ -1,4 +1,4 @@
-FROM oven/bun:1-alpine
+FROM oven/bun:1
 
 WORKDIR /app
 
@@ -7,6 +7,9 @@ RUN bun install
 
 COPY . .
 
+# Ensure Prisma client is generated inside the image so @prisma/client is ready at runtime
+RUN bunx prisma generate || true
+
 EXPOSE 4001
 
-CMD ["bun", "run", "src/main.ts"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun run src/main.ts"]
