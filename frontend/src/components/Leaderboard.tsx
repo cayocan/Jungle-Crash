@@ -20,6 +20,24 @@ interface LeaderboardResponse {
   data: LeaderboardEntry[];
 }
 
+function normalizeLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+  const byUser = new Map<string, LeaderboardEntry>();
+
+  for (const entry of entries) {
+    const profit = Number(entry.bestProfitCents);
+    if (!Number.isFinite(profit) || profit <= 0) continue;
+
+    const current = byUser.get(entry.userId);
+    if (!current || Number(current.bestProfitCents) < profit) {
+      byUser.set(entry.userId, entry);
+    }
+  }
+
+  return [...byUser.values()]
+    .sort((a, b) => Number(b.bestProfitCents) - Number(a.bestProfitCents))
+    .map((entry, i) => ({ ...entry, rank: i + 1 }));
+}
+
 async function fetchLeaderboard(period: Period): Promise<LeaderboardResponse> {
   const res = await fetch(`/games/leaderboard?period=${period}&limit=10`);
   if (!res.ok) throw new Error('Failed to fetch leaderboard');
@@ -36,6 +54,8 @@ export default function Leaderboard() {
     queryFn: () => fetchLeaderboard(period),
     refetchInterval: 30_000,
   });
+
+  const rows = normalizeLeaderboard(data?.data ?? []);
 
   return (
     <div className="card space-y-3">
@@ -65,13 +85,13 @@ export default function Leaderboard() {
             <div key={i} className="anim-skeleton lb-skeleton-row" />
           ))}
         </div>
-      ) : !data?.data.length ? (
+      ) : !rows.length ? (
         <p className="text-xs text-center py-4 text-subtle">
           Nenhum cashout lucrativo neste período.
         </p>
       ) : (
         <div className="space-y-1">
-          {data.data.map((entry) => {
+          {rows.map((entry) => {
             const profit = Number(entry.bestProfitCents) / 100;
             const multiplier = entry.bestMultiplier;
             return (
