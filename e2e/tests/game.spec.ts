@@ -1,21 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
-test.describe('Game Page — estrutura e elementos', () => {
+test.describe('Game Page – estrutura e elementos', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
   });
 
   test('exibe o header com logo e saldo', async ({ page }) => {
     await expect(page.getByText('JUNGLE CRASH')).toBeVisible();
     // Saldo carrega via API — aguarda o valor aparecer
-    await expect(page.getByText(/R\$\s*\d/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 15_000 });
   });
 
   test('exibe o gráfico de crash', async ({ page }) => {
-    // O SVG do crash graph deve estar presente
-    await expect(page.locator('svg')).toBeVisible();
+    // O SVG do crash graph tem viewBox específico
+    await expect(page.locator('svg[viewBox="0 0 800 300"]')).toBeVisible();
     // O multiplicador começa em 1.00x ou mostra CRASHED
-    await expect(page.getByText(/\d+\.\d+x|crashed/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/\d+\.\d+x|crashed/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('painel de aposta tem abas Manual e Auto', async ({ page }) => {
@@ -24,8 +26,11 @@ test.describe('Game Page — estrutura e elementos', () => {
   });
 
   test('painel de aposta tem input de valor e botão apostar', async ({ page }) => {
-    await expect(page.getByPlaceholder(/valor|amount/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /apostar|bet/i })).toBeVisible();
+    await expect(page.getByPlaceholder('0,00')).toBeVisible();
+    // O botão muda de texto conforme o estado do jogo (apostas/running/aguardando)
+    // Verifica que o botão primário de ação existe — não importa o texto atual
+    const actionBtn = page.locator('button.flex-1.py-3.rounded-lg').first();
+    await expect(actionBtn).toBeVisible();
   });
 
   test('exibe o leaderboard com título "Maiores ganhos"', async ({ page }) => {
@@ -38,28 +43,31 @@ test.describe('Game Page — estrutura e elementos', () => {
 
   test('username do jogador é exibido no header', async ({ page }) => {
     // Em desktop o username fica visível; pode estar truncado
-    await expect(page.getByText('player')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('player', { exact: true })).toBeVisible({ timeout: 10_000 });
   });
 });
 
 test.describe('Game Page — fluxo de aposta', () => {
-  test('botão Apostar fica habilitado durante fase de apostas', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('botão Apostar fica habilitado durante fase de apostas', async ({ page }) => {
     const betButton = page.getByRole('button', { name: /apostar/i });
     // Aguarda até 30s para a fase de apostas iniciar
     await expect(betButton).toBeEnabled({ timeout: 30_000 });
   });
 
   test('campo de valor aceita entrada numérica', async ({ page }) => {
-    await page.goto('/');
-    const input = page.getByPlaceholder(/valor|amount/i);
+    const input = page.getByPlaceholder('0,00');
     await input.fill('10.00');
     await expect(input).toHaveValue('10.00');
   });
 
   test('aposta com valor inválido não envia', async ({ page }) => {
-    await page.goto('/');
-    const input = page.getByPlaceholder(/valor|amount/i);
+    const input = page.getByPlaceholder('0,00');
     await input.fill('0');
     const betButton = page.getByRole('button', { name: /apostar/i });
     // Com valor 0 o botão permanece desabilitado
@@ -68,34 +76,48 @@ test.describe('Game Page — fluxo de aposta', () => {
 });
 
 test.describe('Game Page — aba Auto Bet', () => {
-  test('aba Auto mostra campos de estratégia', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('aba Auto mostra campos de estratégia', async ({ page }) => {
     await page.getByRole('button', { name: /auto/i }).click();
     // Deve mostrar opção de estratégia (Fixo / Martingale)
-    await expect(page.getByText(/martingale|fixo/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'Martingale' })).toBeVisible({ timeout: 5_000 });
   });
 });
 
 test.describe('Game Page — Provably Fair', () => {
-  test('botão de verificação está acessível', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('botão de verificação está acessível', async ({ page }) => {
     // O botão "Verificar" ou o ícone de verificação deve estar no histórico
     await expect(page.getByRole('button', { name: /verificar/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('modal Provably Fair abre ao clicar em verificar', async ({ page }) => {
-    await page.goto('/');
     const verifyBtn = page.getByRole('button', { name: /verificar/i });
     await verifyBtn.waitFor({ timeout: 10_000 });
     await verifyBtn.click();
     // O modal deve aparecer com título sobre verificação
-    await expect(page.getByText(/provably fair|verificação/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: /provably fair/i })).toBeVisible({ timeout: 5_000 });
   });
 });
 
 test.describe('Game Page — Leaderboard', () => {
-  test('toggle de período 24h / 7d funciona', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('toggle de período 24h / 7d funciona', async ({ page }) => {
     const btn7d = page.getByRole('button', { name: '7d' });
     await btn7d.waitFor({ timeout: 10_000 });
     await btn7d.click();
