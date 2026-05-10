@@ -1,7 +1,9 @@
 # 🌴 Jungle Crash
 
 > **Nota sobre desenvolvimento assistido por IA**
-> Este projeto foi desenvolvido com auxílio de ferramentas de IA (GitHub Copilot) para acelerar a escrita de código boilerplate, geração de testes e documentação. Todo o código presente neste repositório foi revisado, compreendido e é de meu pleno domínio — conheço cada decisão de arquitetura, cada linha de lógica de negócio e cada integração entre os serviços. A IA foi usada como acelerador de produtividade, não como substituta do entendimento técnico.
+> Este projeto foi desenvolvido com auxílio de ferramentas de IA (GitHub Copilot) para acelerar a escrita de código boilerplate, geração de testes e documentação.
+>
+> **Destaque importante para entrega:** a IA foi usada somente para acelerar implementação e validações, e **eu domino 100% da codebase**. Todo o código foi revisado por mim, entendo integralmente as decisões técnicas e consigo explicar cada módulo do sistema de ponta a ponta.
 
 Jogo de crash gambling full-stack construído com NestJS, React, Keycloak, RabbitMQ e PostgreSQL. Desenvolvido como resposta ao desafio técnico Full-stack da **Jungle Gaming**.
 
@@ -51,35 +53,28 @@ Jogo de crash gambling full-stack construído com NestJS, React, Keycloak, Rabbi
 - [Bun](https://bun.sh) ≥ 1.3
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-### 1. Instalar dependências
-
-```bash
-bun install
-```
-
-> O monorepo usa workspaces Bun — um único `bun install` na raiz instala tudo.
-
-### 2. Instalar browsers Playwright (primeira vez)
-
-```bash
-bun run test:playwright:install
-```
-
-### 3. Subir o ambiente completo
+### Comando único (subir e rodar tudo)
 
 ```bash
 bun run docker:up
 ```
 
-O script `docker:up` executa 6 etapas automaticamente:
-1. Copia `.env.example` → `.env` se não existir
-2. Build e start de todos os containers
-3. Aguarda PostgreSQL e executa `prisma migrate deploy`
-4. **Roda testes unitários** (games + wallets)
-5. **Roda testes Playwright** (aguarda serviços ficarem healthy)
-6. Exibe logs em follow
+Esse comando único já automatiza o bootstrap completo:
+1. Copia `.env.example` para `.env` (se necessário)
+2. Builda e sobe todos os containers
+3. Aguarda Postgres e aplica migrations
+4. Executa testes unitários
+5. Executa testes E2E (Playwright)
+6. Mantém logs em follow
 
-### 3. Acessar
+### Comandos opcionais
+
+```bash
+bun install                      # opcional: instala dependências localmente
+bun run test:playwright:install  # opcional: pré-instala browsers Playwright
+```
+
+### Acessar
 
 | Serviço | URL |
 |---|---|
@@ -91,7 +86,7 @@ O script `docker:up` executa 6 etapas automaticamente:
 | Keycloak Admin | http://localhost:8080 (admin / admin) |
 | RabbitMQ UI | http://localhost:15672 (admin / admin) |
 
-### 4. Usuário de teste pré-configurado
+### Usuário de teste pré-configurado
 
 | Campo | Valor |
 |---|---|
@@ -102,7 +97,7 @@ O script `docker:up` executa 6 etapas automaticamente:
 
 O usuário é provisionado automaticamente pelo Keycloak realm import e a carteira é criada na primeira vez que o jogador acessa o frontend.
 
-### 5. Parar / limpar
+### Parar / limpar
 
 ```bash
 bun run docker:down    # Para os containers
