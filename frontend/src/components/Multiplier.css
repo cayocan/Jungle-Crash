@@ -1,0 +1,23 @@
+.multiplier-card {
+  text-align: center;
+  padding: 2rem;
+  background: #111;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+.multiplier-value {
+  font-size: 5rem;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.multiplier-status {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.multiplier-running { color: #22c55e; }
+.multiplier-closed { color: #ef4444; }
+.multiplier-open { color: #facc15; }
+.multiplier-pending { color: #888; }

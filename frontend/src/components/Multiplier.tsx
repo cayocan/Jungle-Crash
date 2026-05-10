@@ -23,13 +23,21 @@ const statusLabel: Record<Status, string> = {
 
 export default function Multiplier({ multiplier, status }: Props) {
   const color = statusColor[status];
+  const colorClass = color === '#22c55e'
+    ? 'multiplier-running'
+    : color === '#ef4444'
+      ? 'multiplier-closed'
+      : color === '#facc15'
+        ? 'multiplier-open'
+        : 'multiplier-pending';
 
   return (
-    <div style={{ textAlign: 'center', padding: '2rem', background: '#111', borderRadius: '1rem', marginBottom: '1rem' }}>
-      <div style={{ fontSize: '5rem', fontWeight: 'bold', color, transition: 'color 0.3s' }}>
+    <div className="multiplier-card">
+      <div className={`multiplier-value ${colorClass}`}>
         {multiplier.toFixed(2)}x
       </div>
-      <div style={{ marginTop: '0.5rem', color, fontSize: '1rem' }}>{statusLabel[status]}</div>
+      <div className={`multiplier-status ${colorClass}`}>{statusLabel[status]}</div>
     </div>
   );
 }
+import './Multiplier.css';

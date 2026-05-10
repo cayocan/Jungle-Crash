@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
+import './CrashGraph.css';
 
 const W = 800;
 const H = 300;
@@ -115,20 +116,14 @@ export default function CrashGraph() {
   }, [showFormula]);
 
   return (
-    <div className="relative rounded-2xl overflow-hidden" style={{ background: '#0a1020', border: '1px solid #1e2d3d' }}>
+    <div className="crash-graph">
       {/* Red crash flash overlay */}
       {showCrashFlash && (
-        <div
-          className="absolute inset-0 pointer-events-none z-10"
-          style={{ background: 'rgba(255,59,59,0.18)', animation: 'fade-in 0.05s ease' }}
-        />
+        <div className="crash-flash" />
       )}
       {/* Seed hash badge */}
       {serverSeedHash && (
-        <div
-          className="absolute top-2 left-3 text-[10px] font-mono px-2 py-0.5 rounded"
-          style={{ color: '#4a5568', background: '#0d1421aa', letterSpacing: '0.03em' }}
-        >
+        <div className="crash-seed-badge">
           #{serverSeedHash.slice(0, 24)}…
         </div>
       )}
@@ -136,21 +131,12 @@ export default function CrashGraph() {
       {/* Central multiplier overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
         <div
-          className={`font-black tabular-nums leading-none transition-all duration-150 ${running ? 'anim-neon-pulse' : ''} ${crashed ? 'anim-crash-shake' : ''}`}
-          style={{
-            fontSize: 'clamp(2.5rem, 8vw, 5rem)',
-            color: lineColor,
-            textShadow: `0 0 30px ${lineColor}66`,
-            letterSpacing: '-0.02em',
-          }}
+          className={`crash-multiplier font-black tabular-nums leading-none transition-all duration-150 ${running ? 'anim-neon-pulse' : ''} ${crashed ? 'anim-crash-shake crash-multiplier--crashed' : 'crash-multiplier--running'}`}
         >
           {displayVal}x
         </div>
         {statusText && (
-          <div
-            className="mt-2 text-xs font-bold tracking-widest uppercase"
-            style={{ color: statusColor }}
-          >
+          <div className={`mt-2 text-xs font-bold tracking-widest uppercase ${statusColor === '#ff3b3b' ? 'text-crash' : 'text-gold'}`}>
             {statusText}
           </div>
         )}
@@ -160,53 +146,40 @@ export default function CrashGraph() {
       <div ref={formulaRef} className="absolute bottom-2 right-3 z-20">
         <button
           onClick={() => setShowFormula((v) => !v)}
-          className="text-[11px] px-2 py-0.5 rounded font-mono transition-colors"
-          style={{
-            background: showFormula ? '#1e3a2a' : '#0d1421aa',
-            color: showFormula ? '#00ff88' : '#374151',
-            border: `1px solid ${showFormula ? '#00ff8844' : '#1e2d3d'}`,
-          }}
+          className={`crash-formula-btn${showFormula ? ' is-open' : ''}`}
           title="Ver fórmula da curva"
         >
           ƒ(t)
         </button>
         {showFormula && (
-          <div
-            className="absolute bottom-8 right-0 p-3 rounded-xl text-xs font-mono space-y-1.5"
-            style={{
-              background: '#0d1421',
-              border: '1px solid #1e2d3d',
-              width: 260,
-              boxShadow: '0 8px 32px #00000088',
-            }}
-          >
-            <p style={{ color: '#00ff88', fontWeight: 700 }}>Curva do multiplicador</p>
-            <p style={{ color: '#9ca3af' }}>
+          <div className="crash-formula-tooltip">
+            <p className="crash-formula-title">Curva do multiplicador</p>
+            <p className="crash-formula-copy">
               m(t) = max(1.0,&nbsp;e<sup>0.00006 · t</sup>)
             </p>
-            <p style={{ color: '#4a5568', fontSize: 10 }}>
+            <p className="crash-formula-note">
               t = tempo em ms desde o início da rodada
             </p>
-            <hr style={{ borderColor: '#1e2d3d' }} />
-            <p style={{ color: '#9ca3af' }}>Exemplos:</p>
-            <table style={{ width: '100%', color: '#6b7280', fontSize: 10, borderCollapse: 'collapse' }}>
+            <hr className="crash-formula-divider" />
+            <p className="crash-formula-copy">Exemplos:</p>
+            <table className="crash-formula-table">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', paddingBottom: 2 }}>t</th>
-                  <th style={{ textAlign: 'right', paddingBottom: 2 }}>m(t)</th>
+                  <th>t</th>
+                  <th className="text-right">m(t)</th>
                 </tr>
               </thead>
               <tbody>
                 {[[0,'1.00x'],[5000,'1.35x'],[10000,'1.82x'],[20000,'3.32x'],[30000,'6.05x'],[60000,'36.6x']].map(([t, v]) => (
                   <tr key={t}>
                     <td>{typeof t === 'number' ? `${t/1000}s` : t}</td>
-                    <td style={{ textAlign: 'right', color: '#00ff8888' }}>{v}</td>
+                    <td className="text-right crash-formula-value">{v}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <hr style={{ borderColor: '#1e2d3d' }} />
-            <p style={{ color: '#4a5568', fontSize: 10 }}>
+            <hr className="crash-formula-divider" />
+            <p className="crash-formula-note">
               Dobra a cada ≈ 11,5s · Crash = Provably Fair HMAC-SHA256
             </p>
           </div>
@@ -216,7 +189,7 @@ export default function CrashGraph() {
       {/* SVG graph */}
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', display: 'block', minHeight: '200px' }}
+        className="crash-graph-svg"
         preserveAspectRatio="none"
       >
         <defs>
