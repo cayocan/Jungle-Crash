@@ -265,29 +265,28 @@ export class RoundRepository implements OnModuleDestroy {
     }
 
     /**
-     * Returns top N players ranked by their BEST single-round profit
-     * (cashoutCents - amountCents) within a given period.
-     * Only cashout wins are considered — losses and net-negative players are excluded.
+     * Returns top N players ranked by their BEST single-round gain
+     * (highest cashoutCents) within a given period.
+     * Only settled bets with cashout are considered.
      */
     async getLeaderboard(limit = 10, periodHours = 24): Promise<Array<{
         userId: string;
-        bestProfitCents: bigint;
+        bestGainCents: bigint;
         bestAmountCents: bigint;
         bestCashoutCents: bigint;
         bestMultiplier: number;
     }>> {
         const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
-        // Subquery finds, for each user, the single bet with the highest profit.
-        // FILTER ensures we only look at cashed-out bets with positive profit.
+        // Subquery finds, for each user, the single bet with the highest payout (cashout).
         const rows = await this.prisma.$queryRaw<Array<{
             userId: string;
-            best_profit: bigint;
+            best_gain: bigint;
             best_amount: bigint;
             best_cashout: bigint;
         }>>`
             SELECT
                 "userId",
-                MAX("cashoutCents" - "amountCents") AS best_profit,
+                MAX("cashoutCents") AS best_gain,
                 (
                     SELECT b2."amountCents"
                     FROM "Bet" b2
@@ -295,8 +294,8 @@ export class RoundRepository implements OnModuleDestroy {
                       AND b2."settledAt" IS NOT NULL
                       AND b2."placedAt" >= ${since}
                       AND b2."cashoutCents" IS NOT NULL
-                      AND b2."cashoutCents" > b2."amountCents"
-                    ORDER BY (b2."cashoutCents" - b2."amountCents") DESC
+                      AND b2."cashoutCents" > 0
+                    ORDER BY b2."cashoutCents" DESC
                     LIMIT 1
                 ) AS best_amount,
                 (
@@ -306,8 +305,8 @@ export class RoundRepository implements OnModuleDestroy {
                       AND b2."settledAt" IS NOT NULL
                       AND b2."placedAt" >= ${since}
                       AND b2."cashoutCents" IS NOT NULL
-                      AND b2."cashoutCents" > b2."amountCents"
-                    ORDER BY (b2."cashoutCents" - b2."amountCents") DESC
+                      AND b2."cashoutCents" > 0
+                    ORDER BY b2."cashoutCents" DESC
                     LIMIT 1
                 ) AS best_cashout
             FROM "Bet" b
@@ -315,13 +314,13 @@ export class RoundRepository implements OnModuleDestroy {
                 b."settledAt" IS NOT NULL
                 AND b."placedAt" >= ${since}
                 AND b."cashoutCents" IS NOT NULL
-                AND b."cashoutCents" > b."amountCents"
+                AND b."cashoutCents" > 0
             GROUP BY b."userId"
-            ORDER BY best_profit DESC
+            ORDER BY best_gain DESC
             LIMIT ${limit}
         `;
         return rows.map((r) => {
-            const profit   = BigInt(r.best_profit);
+            const gain     = BigInt(r.best_gain);
             const amount   = BigInt(r.best_amount);
             const cashout  = BigInt(r.best_cashout);
             const multiplier = amount > 0n
@@ -329,7 +328,7 @@ export class RoundRepository implements OnModuleDestroy {
                 : 0;
             return {
                 userId: r.userId,
-                bestProfitCents: profit,
+                bestGainCents: gain,
                 bestAmountCents: amount,
                 bestCashoutCents: cashout,
                 bestMultiplier: multiplier,

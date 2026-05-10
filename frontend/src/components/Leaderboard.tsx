@@ -8,7 +8,7 @@ type Period = '24' | '168';
 interface LeaderboardEntry {
   rank: number;
   userId: string;
-  bestProfitCents: string;
+  bestGainCents: string;
   bestAmountCents: string;
   bestCashoutCents: string;
   bestMultiplier: number;
@@ -24,17 +24,17 @@ function normalizeLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   const byUser = new Map<string, LeaderboardEntry>();
 
   for (const entry of entries) {
-    const profit = Number(entry.bestProfitCents);
-    if (!Number.isFinite(profit) || profit <= 0) continue;
+    const gain = Number(entry.bestGainCents);
+    if (!Number.isFinite(gain) || gain <= 0) continue;
 
     const current = byUser.get(entry.userId);
-    if (!current || Number(current.bestProfitCents) < profit) {
+    if (!current || Number(current.bestGainCents) < gain) {
       byUser.set(entry.userId, entry);
     }
   }
 
   return [...byUser.values()]
-    .sort((a, b) => Number(b.bestProfitCents) - Number(a.bestProfitCents))
+    .sort((a, b) => Number(b.bestGainCents) - Number(a.bestGainCents))
     .map((entry, i) => ({ ...entry, rank: i + 1 }));
 }
 
@@ -87,12 +87,12 @@ export default function Leaderboard() {
         </div>
       ) : !rows.length ? (
         <p className="text-xs text-center py-4 text-subtle">
-          Nenhum cashout lucrativo neste período.
+          Nenhum ganho neste período.
         </p>
       ) : (
         <div className="space-y-1">
           {rows.map((entry) => {
-            const profit = Number(entry.bestProfitCents) / 100;
+            const gain = Number(entry.bestGainCents) / 100;
             const multiplier = entry.bestMultiplier;
             return (
               <div
@@ -116,9 +116,9 @@ export default function Leaderboard() {
                   {multiplier.toFixed(2)}x
                 </span>
 
-                {/* Best single-round profit */}
+                {/* Best single-round gain */}
                 <span className="text-sm font-bold text-right tabular-nums profit">
-                  +R$ {profit.toFixed(2)}
+                  R$ {gain.toFixed(2)}
                 </span>
               </div>
             );

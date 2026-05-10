@@ -83,20 +83,20 @@ test.describe('API — leaderboard', () => {
     expect(Array.isArray(body.data)).toBe(true);
   });
 
-  test('leaderboard 24h não contém lucros negativos', async ({ request }) => {
+  test('leaderboard 24h não contém ganhos nulos/negativos', async ({ request }) => {
     const res = await request.get(`${GAMES_API}/leaderboard?period=24&limit=10`);
     const body = await res.json();
-    for (const entry of body.data as Array<{ bestProfitCents: string }>) {
-      expect(Number(entry.bestProfitCents)).toBeGreaterThan(0);
+    for (const entry of body.data as Array<{ bestGainCents: string }>) {
+      expect(Number(entry.bestGainCents)).toBeGreaterThan(0);
     }
   });
 
-  test('leaderboard 7d não contém lucros negativos', async ({ request }) => {
+  test('leaderboard 7d não contém ganhos nulos/negativos', async ({ request }) => {
     const res = await request.get(`${GAMES_API}/leaderboard?period=168&limit=10`);
     expect(res.status()).toBe(200);
     const body = await res.json();
-    for (const entry of body.data as Array<{ bestProfitCents: string }>) {
-      expect(Number(entry.bestProfitCents)).toBeGreaterThan(0);
+    for (const entry of body.data as Array<{ bestGainCents: string }>) {
+      expect(Number(entry.bestGainCents)).toBeGreaterThan(0);
     }
   });
 
@@ -105,7 +105,7 @@ test.describe('API — leaderboard', () => {
     const body = await res.json();
     for (const entry of body.data as Array<Record<string, unknown>>) {
       expect(entry).toHaveProperty('userId');
-      expect(entry).toHaveProperty('bestProfitCents');
+      expect(entry).toHaveProperty('bestGainCents');
       expect(entry).toHaveProperty('bestMultiplier');
     }
   });
@@ -120,14 +120,14 @@ test.describe('API — leaderboard', () => {
     const res = await request.get(`${GAMES_API}/leaderboard?period=24&limit=50`);
     expect(res.status()).toBe(200);
     const body = await res.json();
-    const rows = body.data as Array<{ userId: string; bestProfitCents: string }>;
+    const rows = body.data as Array<{ userId: string; bestGainCents: string }>;
 
     const uniqueUsers = new Set(rows.map((r) => r.userId));
     expect(uniqueUsers.size).toBe(rows.length);
 
-    const profits = rows.map((r) => Number(r.bestProfitCents));
-    for (let i = 1; i < profits.length; i += 1) {
-      expect(profits[i]).toBeLessThanOrEqual(profits[i - 1]);
+    const gains = rows.map((r) => Number(r.bestGainCents));
+    for (let i = 1; i < gains.length; i += 1) {
+      expect(gains[i]).toBeLessThanOrEqual(gains[i - 1]);
     }
   });
 });

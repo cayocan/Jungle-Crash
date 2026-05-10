@@ -8,10 +8,10 @@ export class LeaderboardController {
     constructor(private readonly roundRepo: RoundRepository) { }
 
     /**
-     * Returns top players ranked by profit (cashout - bet) for a given period.
+     * Returns top players ranked by best gain (highest cashout) for a given period.
      * Period defaults to 24h; supported values: 24, 168 (7d).
      */
-    @ApiOperation({ summary: 'Top players by profit for a period (24h or 168h)' })
+    @ApiOperation({ summary: 'Top players by best gain for a period (24h or 168h)' })
     @ApiQuery({ name: 'period', required: false, description: 'Period in hours: 24 (default) or 168' })
     @ApiQuery({ name: 'limit', required: false, description: 'Max entries (default 10, max 50)' })
     @Get()
@@ -28,7 +28,7 @@ export class LeaderboardController {
             data: entries.map((e, i) => ({
                 rank: i + 1,
                 userId: e.userId,
-                bestProfitCents: e.bestProfitCents.toString(),
+                bestGainCents: e.bestGainCents.toString(),
                 bestAmountCents: e.bestAmountCents.toString(),
                 bestCashoutCents: e.bestCashoutCents.toString(),
                 bestMultiplier: e.bestMultiplier,
