@@ -11,7 +11,7 @@ test.describe('Provably Fair — modal e UI', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         // Aguarda o ciclo OIDC (silent refresh ou redirect de volta)
-        await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => { });
+        await page.waitForLoadState('domcontentloaded');
         // Se o token expirou, a página pode ter redirecionado para o Keycloak e voltado
         await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     });
@@ -41,8 +41,11 @@ test.describe('Provably Fair — modal e UI', () => {
         await verifyBtn.waitFor({ timeout: 15_000 });
         await verifyBtn.click();
 
-        // Deve mostrar o crash point na tabela (formato X.XXx)
-        await expect(page.locator('td').filter({ hasText: /\d+\.\d+x/ }).first()).toBeVisible({ timeout: 5_000 });
+        // Abre a primeira rodada para exibir o JSON detalhado de verificação.
+        const row = page.locator('tbody tr').first();
+        await row.waitFor({ timeout: 8_000 });
+        await row.click();
+        await expect(page.locator('pre').filter({ hasText: /crashPoint/ })).toBeVisible({ timeout: 5_000 });
     });
 
     test('modal pode ser fechado', async ({ page }) => {
@@ -134,3 +137,5 @@ test.describe('Provably Fair — API de verificação', () => {
         expect(computed).toBe(settled!.serverSeedHash);
     });
 });
+
+

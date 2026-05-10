@@ -4,8 +4,8 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  timeout: 35_000,
+  expect: { timeout: 8_000 },
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -14,6 +14,8 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',

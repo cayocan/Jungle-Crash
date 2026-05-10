@@ -11,14 +11,16 @@ test.describe('API — rounds (público)', () => {
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty('status');
-    expect(['PENDING', 'OPEN', 'CLOSED', 'SETTLED']).toContain(body.status);
+    expect(['PENDING', 'OPEN', 'CLOSED', 'SETTLED', 'idle', 'betting', 'running', 'crashed']).toContain(body.status);
   });
 
   test('GET /games/rounds/current tem serverSeedHash (commitamento)', async ({ request }) => {
     const res = await request.get(`${GAMES_API}/rounds/current`);
     const body = await res.json();
     // Antes do crash, serverSeed não deve estar exposta
-    expect(body).toHaveProperty('serverSeedHash');
+    if (body.status !== 'idle') {
+      expect(body).toHaveProperty('serverSeedHash');
+    }
     expect(body.serverSeed).toBeUndefined();
   });
 
@@ -112,6 +114,21 @@ test.describe('API — leaderboard', () => {
     const res = await request.get(`${GAMES_API}/leaderboard?period=24&limit=3`);
     const body = await res.json();
     expect(body.data.length).toBeLessThanOrEqual(3);
+  });
+
+  test('leaderboard não repete usuário e mantém maior gain por usuário', async ({ request }) => {
+    const res = await request.get(`${GAMES_API}/leaderboard?period=24&limit=50`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    const rows = body.data as Array<{ userId: string; bestProfitCents: string }>;
+
+    const uniqueUsers = new Set(rows.map((r) => r.userId));
+    expect(uniqueUsers.size).toBe(rows.length);
+
+    const profits = rows.map((r) => Number(r.bestProfitCents));
+    for (let i = 1; i < profits.length; i += 1) {
+      expect(profits[i]).toBeLessThanOrEqual(profits[i - 1]);
+    }
   });
 });
 

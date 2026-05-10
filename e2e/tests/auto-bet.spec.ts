@@ -9,7 +9,7 @@ import { test, expect } from '../fixtures';
 test.describe('Auto Bet — estrutura da aba', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     // Navega para aba Auto
     await page.getByRole('button', { name: /auto/i }).click();
@@ -46,7 +46,7 @@ test.describe('Auto Bet — estrutura da aba', () => {
 test.describe('Auto Bet — estratégia Fixo', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: /auto/i }).click();
     await expect(page.getByText(/fixo|fixed/i)).toBeVisible({ timeout: 5_000 });
@@ -64,7 +64,7 @@ test.describe('Auto Bet — estratégia Fixo', () => {
 test.describe('Auto Bet — estratégia Martingale', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: /auto/i }).click();
     await expect(page.getByText(/martingale/i)).toBeVisible({ timeout: 5_000 });
@@ -97,7 +97,7 @@ test.describe('Auto Bet — estratégia Martingale', () => {
 test.describe('Auto Bet — validações e estado', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: /auto/i }).click();
   });
@@ -132,3 +132,5 @@ test.describe('Auto Bet — validações e estado', () => {
     await expect(page.getByText(/jungle crash/i)).toBeVisible();
   });
 });
+
+

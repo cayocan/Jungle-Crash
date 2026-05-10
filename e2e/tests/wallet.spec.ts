@@ -9,7 +9,7 @@ test.describe('Carteira — exibição de saldo', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         // Aguarda o ciclo OIDC (silent refresh pode levar alguns segundos)
-        await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => { });
+        await page.waitForLoadState('domcontentloaded');
         await expect(page.getByText(/R\$\s*\d+[.,]\d{2}/)).toBeVisible({ timeout: 30_000 });
     });
 
@@ -34,7 +34,7 @@ test.describe('Carteira — API REST via Kong', () => {
         // Garante que estamos na origem correta antes de acessar localStorage
         // (o redirect OIDC pode deixar a page numa URL do Keycloak — cross-origin)
         await page.goto('/');
-        await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => { });
+        await page.waitForLoadState('domcontentloaded');
         await page.waitForURL(/localhost:3000/, { timeout: 15_000 }).catch(() => { });
 
         // Captura o token de autenticação do localStorage
@@ -72,3 +72,5 @@ test.describe('Carteira — API REST via Kong', () => {
         expect(res.status()).toBe(401);
     });
 });
+
+
