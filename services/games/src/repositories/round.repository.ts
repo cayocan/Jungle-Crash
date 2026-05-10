@@ -160,6 +160,7 @@ export class RoundRepository implements OnModuleDestroy {
                     cashoutCents,
                     multiplierAtCashout: multiplier.toFixed(2),
                     cashedOutAt: new Date(),
+                    settledAt: new Date(),
                 },
             });
 
@@ -291,7 +292,7 @@ export class RoundRepository implements OnModuleDestroy {
                     SELECT b2."amountCents"
                     FROM "Bet" b2
                     WHERE b2."userId" = b."userId"
-                      AND b2."settledAt" IS NOT NULL
+                                            AND (b2."settledAt" IS NOT NULL OR b2."cashedOutAt" IS NOT NULL)
                       AND b2."placedAt" >= ${since}
                       AND b2."cashoutCents" IS NOT NULL
                       AND b2."cashoutCents" > 0
@@ -302,7 +303,7 @@ export class RoundRepository implements OnModuleDestroy {
                     SELECT b2."cashoutCents"
                     FROM "Bet" b2
                     WHERE b2."userId" = b."userId"
-                      AND b2."settledAt" IS NOT NULL
+                                            AND (b2."settledAt" IS NOT NULL OR b2."cashedOutAt" IS NOT NULL)
                       AND b2."placedAt" >= ${since}
                       AND b2."cashoutCents" IS NOT NULL
                       AND b2."cashoutCents" > 0
@@ -311,7 +312,7 @@ export class RoundRepository implements OnModuleDestroy {
                 ) AS best_cashout
             FROM "Bet" b
             WHERE
-                b."settledAt" IS NOT NULL
+                (b."settledAt" IS NOT NULL OR b."cashedOutAt" IS NOT NULL)
                 AND b."placedAt" >= ${since}
                 AND b."cashoutCents" IS NOT NULL
                 AND b."cashoutCents" > 0
